@@ -1,0 +1,25 @@
+{
+  "event": "Open Agent Hackathon 2026",
+  "team": {
+    "name": "Irigo",
+    "leader": "Le Quang Minh Khoa",
+    "members": ["Le Quang Minh Khoa", "Nguyen Quang Huy"]
+  },
+  "track": "02 - The Agent That Can Explain Why",
+  "product": "ServiceWhy",
+  "repo": "https://github.com/KoangWy/irigo-submission",
+  "model": {
+    "provider": "OpenCode Go (OpenAI-compatible endpoint)",
+    "base_url": "https://opencode.ai/zen/go/v1",
+    "model_id": "deepseek-v4.1-flash"
+  },
+  "sponsor_tech": {
+    "zetaris": "Federated SQL over POS tickets/items/table events (PostgreSQL) plus rosters/plate returns/reviews (second store); Investigator queries and Verifier re-queries both go through Zetaris",
+    "meterless": "World Model engine implemented per Meterless reference architecture: WorldStoreService + IngestPipelineService + ContextBuilderService as shared hypothesis/evidence state with provenance",
+    "cursor": "Development environment; .cursor/rules committed; usage documented in README (sponsor credit was never released)",
+    "nvidia": "not planned; optional stretch only"
+  },
+  "pre_existing_components": [],
+  "synthetic_data": true,
+  "build_window": "2026-10-22T00:00Z/2026-10-27T23:45Z"
+}

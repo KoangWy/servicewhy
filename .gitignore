@@ -1,0 +1,26 @@
+# Secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Python
+__pycache__/
+.venv/
+*.pyc
+
+# Node / frontend
+node_modules/
+dist/
+
+# Generated data & artefacts
+data/generated/
+*.db
+*.duckdb
+
+# Logs: real runs are local; curated example traces are committed under logs/examples/
+logs/*
+!logs/examples/
+
+.DS_Store
