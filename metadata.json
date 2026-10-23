@@ -7,7 +7,7 @@
   },
   "track": "02 - The Agent That Can Explain Why",
   "product": "ServiceWhy",
-  "repo": "https://github.com/KoangWy/irigo-submission",
+  "repo": "https://github.com/KoangWy/servicewhy",
   "model": {
     "provider": "OpenCode Go (OpenAI-compatible endpoint)",
     "base_url": "https://opencode.ai/zen/go/v1",

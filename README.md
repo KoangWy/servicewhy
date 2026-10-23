@@ -6,15 +6,16 @@
 > evidence-backed answer built from point-of-sale data, table-service events, shift rosters and
 > guest reviews — with a **verifier that blocks any claim the data does not support**.
 
-**Status: scaffold.** Build window 2026-10-22 → 2026-10-27 (23:45 UTC). The implementation spec is
-being finalized at `docs/SPEC.md`. Everything here is new work from 2026-10-22 onward.
+**Status: scaffold + agreed spec.** Build window 2026-10-22 → 2026-10-27 (23:45 UTC). The
+implementation spec is `docs/SPEC.md`; the domain language is `GLOSSARY.md`. Everything here is new
+work from 2026-10-22 onward.
 
 ## What exists right now
 
 | Piece | State |
 |---|---|
 | Repository scaffold, rules, metadata | This commit |
-| Implementation spec (`docs/SPEC.md`) | Being written (2026-10-24) |
+| Implementation spec (`docs/SPEC.md`) | Agreed 2026-10-24 |
 | Simulator, agent core, verifier, UI | Not yet — see spec build plan |
 
 ## Data disclosure
