@@ -264,5 +264,5 @@
   ],
   "trace_id": "trace-sample-q1",
   "log_file": "logs/trace-sample-q1.jsonl",
-  "execution_time_seconds": 1.13
+  "execution_time_seconds": 7.9
 }

@@ -102,5 +102,5 @@
   ],
   "trace_id": "trace-sample-q8",
   "log_file": "logs/trace-sample-q8.jsonl",
-  "execution_time_seconds": 0.23
+  "execution_time_seconds": 0.48
 }

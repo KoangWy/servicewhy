@@ -62,5 +62,5 @@
   ],
   "trace_id": "trace-sample-q2",
   "log_file": "logs/trace-sample-q2.jsonl",
-  "execution_time_seconds": 0.01
+  "execution_time_seconds": 0.05
 }

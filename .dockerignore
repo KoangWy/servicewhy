@@ -1,0 +1,9 @@
+.git
+.venv
+**/__pycache__
+ui/node_modules
+ui/dist
+logs/*
+!logs/examples
+data/generated
+.env

@@ -1,0 +1,73 @@
+# Default (no credentials): `docker compose up` -> api in SAMPLE mode on :8000, ui on :5173.
+# FULL mode: start the Zetaris bundle from its own compose (see README), set SAMPLE_MODE=false and keys in
+# .env, then `docker compose --profile full up -d` and `docker compose --profile full run --rm seed`.
+services:
+  api:
+    build: { context: ., dockerfile: Dockerfile.api }
+    ports: ["8000:8000"]
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      SAMPLE_MODE: ${SAMPLE_MODE:-true}
+      DATA_BACKEND: zetaris
+      MODEL_MODE: ${MODEL_MODE:-live}
+      LOGS_DIR: /app/logs-host
+      # the Zetaris bundle publishes its ports on the host; reach it from inside this container
+      ZETARIS_REST_URL: ${ZETARIS_REST_URL_FROM_DOCKER:-http://host.docker.internal:8888/api/v1.0}
+      ZETARIS_LOGIN_URL: ${ZETARIS_LOGIN_URL_FROM_DOCKER:-http://host.docker.internal:3000/api}
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    volumes: ["./logs:/app/logs-host"]  # traces land in ./logs on the host; logs/examples stays in the image
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=5)"]
+      interval: 10s
+      retries: 6
+
+  ui:
+    build: { context: ., dockerfile: Dockerfile.ui }
+    ports: ["5173:80"]
+    depends_on: [api]
+
+  postgres:
+    image: postgres:16-alpine
+    profiles: ["full"]
+    ports: ["5432:5432"]
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-svcwhy}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
+      POSTGRES_DB: ${POSTGRES_DB:-servicewhy}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-svcwhy}"]
+      interval: 5s
+      retries: 12
+
+  minio:
+    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
+    profiles: ["full"]
+    command: server /data --console-address ":9001"
+    ports: ["9000:9000", "9001:9001"]
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-svcwhy}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-change-me-minio}
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      retries: 12
+
+  seed:  # one-shot: simulator -> Postgres + Parquet on MinIO -> idempotent Zetaris registration
+    build: { context: ., dockerfile: Dockerfile.api }
+    profiles: ["full"]
+    command: ["python", "-m", "app.sim.load"]
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      POSTGRES_HOST: postgres
+      MINIO_ENDPOINT: minio:9000
+      ZETARIS_REST_URL: ${ZETARIS_REST_URL_FROM_DOCKER:-http://host.docker.internal:8888/api/v1.0}
+      ZETARIS_LOGIN_URL: ${ZETARIS_LOGIN_URL_FROM_DOCKER:-http://host.docker.internal:3000/api}
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    volumes: ["./data:/app/data"]
+    depends_on:
+      postgres: { condition: service_healthy }
+      minio: { condition: service_healthy }

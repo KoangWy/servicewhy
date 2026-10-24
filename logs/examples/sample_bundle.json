@@ -4,7 +4,7 @@
   "model": "fake-offline",
   "model_mode": "fake"
  },
- "recorded_at": "2026-10-24T17:44:48Z",
+ "recorded_at": "2026-10-24T17:58:04Z",
  "seed": 20261024,
  "synthetic_data": true,
  "runs": [
@@ -278,7 +278,7 @@
     ],
     "trace_id": "trace-sample-q1",
     "log_file": "logs/trace-sample-q1.jsonl",
-    "execution_time_seconds": 1.13
+    "execution_time_seconds": 7.9
    }
   },
   {
@@ -349,7 +349,7 @@
     ],
     "trace_id": "trace-sample-q2",
     "log_file": "logs/trace-sample-q2.jsonl",
-    "execution_time_seconds": 0.01
+    "execution_time_seconds": 0.05
    }
   },
   {
@@ -622,7 +622,7 @@
     ],
     "trace_id": "trace-sample-q3",
     "log_file": "logs/trace-sample-q3.jsonl",
-    "execution_time_seconds": 1.35
+    "execution_time_seconds": 4.7
    }
   },
   {
@@ -777,7 +777,7 @@
     ],
     "trace_id": "trace-sample-q4",
     "log_file": "logs/trace-sample-q4.jsonl",
-    "execution_time_seconds": 1.03
+    "execution_time_seconds": 2.71
    }
   },
   {
@@ -947,7 +947,7 @@
     ],
     "trace_id": "trace-sample-q5",
     "log_file": "logs/trace-sample-q5.jsonl",
-    "execution_time_seconds": 0.41
+    "execution_time_seconds": 0.94
    }
   },
   {
@@ -960,11 +960,11 @@
     "question": "How did this week compare to last week?",
     "output": {
      "answer_type": "answer",
-     "summary": "Revenue per party fell from Mon 28 Sep to Sun 04 Oct, concentrated in section C (+6.5%, +205%) [evd_04e7dd633877] \u2014 high confidence. Action: Review comps and missed add-on rounds in section C from Mon 28 Sep to Sun 04 Oct; pair with the staffing finding before changing prices. Parties served at 7 tables per server waited longer for food from Mon 21 Sep to Sun 04 Oct (+5.4 min, +28%) [evd_3b99e4bd220b] \u2014 medium confidence. Action: Add one server to section the affected section from Mon 21 Sep to Sun 04 Oct, capping load at 5 tables per server. Not a cause: Party counts from Mon 28 Sep to Sun 04 Oct were in line with the baseline (41.4 vs 40.6, n=290) [evd_46db1acfbf7d].",
+     "summary": "More tickets were comped from Mon 28 Sep to Sun 04 Oct than in the baseline (+6.5%, +205%) [evd_04e7dd633877] \u2014 high confidence. Action: Review comps and missed add-on rounds in section C from Mon 28 Sep to Sun 04 Oct; pair with the staffing finding before changing prices. Parties served at 7 tables per server waited longer for food from Mon 21 Sep to Sun 04 Oct (+5.4 min, +28%) [evd_3b99e4bd220b] \u2014 medium confidence. Action: Add one server to section the affected section from Mon 21 Sep to Sun 04 Oct, capping load at 5 tables per server. Not a cause: Party counts from Mon 28 Sep to Sun 04 Oct were in line with the baseline (41.4 vs 40.6, n=290) [evd_46db1acfbf7d].",
      "findings": [
       {
-       "id": "fnd_c5e28e47131e",
-       "cause_hypothesis": "Revenue per party fell from Mon 28 Sep to Sun 04 Oct, concentrated in section C",
+       "id": "fnd_52a5edcad6d0",
+       "cause_hypothesis": "More tickets were comped from Mon 28 Sep to Sun 04 Oct than in the baseline",
        "evidence": [
         {
          "evidence_id": "evd_04e7dd633877",
@@ -1268,7 +1268,7 @@
     ],
     "trace_id": "trace-sample-q6",
     "log_file": "logs/trace-sample-q6.jsonl",
-    "execution_time_seconds": 2.05
+    "execution_time_seconds": 4.57
    }
   },
   {
@@ -1450,7 +1450,7 @@
     ],
     "trace_id": "trace-sample-q8",
     "log_file": "logs/trace-sample-q8.jsonl",
-    "execution_time_seconds": 0.23
+    "execution_time_seconds": 0.48
    }
   },
   {
@@ -1750,7 +1750,7 @@
     ],
     "trace_id": "trace-sample-q9",
     "log_file": "logs/trace-sample-q9.jsonl",
-    "execution_time_seconds": 1.66
+    "execution_time_seconds": 3.09
    }
   },
   {
@@ -2030,7 +2030,7 @@
     ],
     "trace_id": "trace-sample-q10",
     "log_file": "logs/trace-sample-q10.jsonl",
-    "execution_time_seconds": 1.55
+    "execution_time_seconds": 3.51
    }
   },
   {
@@ -2043,11 +2043,11 @@
     "question": "How did revenue, guest counts and reviews change this period compared with the previous one?",
     "output": {
      "answer_type": "answer",
-     "summary": "Revenue per party fell from Mon 28 Sep to Sun 04 Oct, concentrated in section C (+6.5%, +205%) [evd_04e7dd633877] \u2014 high confidence. Action: Review comps and missed add-on rounds in section C from Mon 28 Sep to Sun 04 Oct; pair with the staffing finding before changing prices. Not a cause: Party counts from Mon 28 Sep to Sun 04 Oct were in line with the baseline (41.4 vs 40.6, n=290) [evd_46db1acfbf7d]. Not a cause: Review ratings from Mon 28 Sep to Sun 04 Oct were in line with the baseline (11.8% vs 9.9%, n=110) [evd_1f0ab4b31af0].",
+     "summary": "More tickets were comped from Mon 28 Sep to Sun 04 Oct than in the baseline (+6.5%, +205%) [evd_04e7dd633877] \u2014 high confidence. Action: Review comps and missed add-on rounds in section C from Mon 28 Sep to Sun 04 Oct; pair with the staffing finding before changing prices. Not a cause: Party counts from Mon 28 Sep to Sun 04 Oct were in line with the baseline (41.4 vs 40.6, n=290) [evd_46db1acfbf7d]. Not a cause: Review ratings from Mon 28 Sep to Sun 04 Oct were in line with the baseline (11.8% vs 9.9%, n=110) [evd_1f0ab4b31af0].",
      "findings": [
       {
-       "id": "fnd_c5e28e47131e",
-       "cause_hypothesis": "Revenue per party fell from Mon 28 Sep to Sun 04 Oct, concentrated in section C",
+       "id": "fnd_52a5edcad6d0",
+       "cause_hypothesis": "More tickets were comped from Mon 28 Sep to Sun 04 Oct than in the baseline",
        "evidence": [
         {
          "evidence_id": "evd_04e7dd633877",
@@ -2292,7 +2292,7 @@
     ],
     "trace_id": "trace-sample-report-1",
     "log_file": "logs/trace-sample-report-1.jsonl",
-    "execution_time_seconds": 0.83
+    "execution_time_seconds": 1.96
    }
   },
   {
@@ -2585,7 +2585,7 @@
     ],
     "trace_id": "trace-sample-report-2",
     "log_file": "logs/trace-sample-report-2.jsonl",
-    "execution_time_seconds": 1.78
+    "execution_time_seconds": 3.62
    }
   }
  ],
@@ -2727,7 +2727,7 @@
    ],
    "trace_id": "trace-sample-drilldown",
    "log_file": "logs/trace-sample-drilldown.jsonl",
-   "execution_time_seconds": 0.58
+   "execution_time_seconds": 1.42
   }
  },
  "report": {
@@ -2737,11 +2737,11 @@
    "end": "2026-10-04"
   },
   "status": "success",
-  "summary": "Revenue per party fell from Mon 28 Sep to Sun 04 Oct, concentrated in section C (+6.5%, +205%) [evd_04e7dd633877] \u2014 high confidence. Action: Review comps and missed add-on rounds in section C from Mon 28 Sep to Sun 04 Oct; pair with the staffing finding before changing prices. Not a cause: Party counts from Mon 28 Sep to Sun 04 Oct were in line with the baseline (41.4 vs 40.6, n=290) [evd_46db1acfbf7d]. Not a cause: Review ratings from Mon 28 Sep to Sun 04 Oct were in line with the baseline (11.8% vs 9.9%, n=110) [evd_1f0ab4b31af0]. Parties served at 7 tables per server waited longer for food from Mon 21 Sep to Sun 04 Oct (+5.4 min, +28%) [evd_3b99e4bd220b] \u2014 medium confidence. Action: Add one server to section the affected section from Mon 21 Sep to Sun 04 Oct, capping load at 5 tables per server. With only 1 busser on duty, tables took longer to reset from Mon 28 Sep to Sun 04 Oct (+4.0 min, +101%) [evd_d0eafc45fd11] \u2014 medium confidence. Action: Keep a second busser on until close from Mon 28 Sep to Sun 04 Oct instead of releasing them at the start of the late window. Not a cause: The kitchen was not slow from Mon 28 Sep to Sun 04 Oct: fire-to-bump time was in line with the baseline (11.7 min vs 12.0 min, n=290) [evd_04da4d6db38c].",
+  "summary": "More tickets were comped from Mon 28 Sep to Sun 04 Oct than in the baseline (+6.5%, +205%) [evd_04e7dd633877] \u2014 high confidence. Action: Review comps and missed add-on rounds in section C from Mon 28 Sep to Sun 04 Oct; pair with the staffing finding before changing prices. Not a cause: Party counts from Mon 28 Sep to Sun 04 Oct were in line with the baseline (41.4 vs 40.6, n=290) [evd_46db1acfbf7d]. Not a cause: Review ratings from Mon 28 Sep to Sun 04 Oct were in line with the baseline (11.8% vs 9.9%, n=110) [evd_1f0ab4b31af0]. Parties served at 7 tables per server waited longer for food from Mon 21 Sep to Sun 04 Oct (+5.4 min, +28%) [evd_3b99e4bd220b] \u2014 medium confidence. Action: Add one server to section the affected section from Mon 21 Sep to Sun 04 Oct, capping load at 5 tables per server. With only 1 busser on duty, tables took longer to reset from Mon 28 Sep to Sun 04 Oct (+4.0 min, +101%) [evd_d0eafc45fd11] \u2014 medium confidence. Action: Keep a second busser on until close from Mon 28 Sep to Sun 04 Oct instead of releasing them at the start of the late window. Not a cause: The kitchen was not slow from Mon 28 Sep to Sun 04 Oct: fire-to-bump time was in line with the baseline (11.7 min vs 12.0 min, n=290) [evd_04da4d6db38c].",
   "findings": [
    {
-    "id": "fnd_c5e28e47131e",
-    "cause_hypothesis": "Revenue per party fell from Mon 28 Sep to Sun 04 Oct, concentrated in section C",
+    "id": "fnd_52a5edcad6d0",
+    "cause_hypothesis": "More tickets were comped from Mon 28 Sep to Sun 04 Oct than in the baseline",
     "evidence": [
      {
       "evidence_id": "evd_04e7dd633877",
@@ -3010,6 +3010,6 @@
    ]
   },
   "errors": [],
-  "execution_time_seconds": 2.61
+  "execution_time_seconds": 5.59
  }
 }
