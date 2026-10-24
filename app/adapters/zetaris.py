@@ -86,6 +86,7 @@ class DataAccessAdapter:
         res = self._run(sql, limit)
         return [dict(zip(res["headers"], row)) for row in res["data"]]
 
-    def execute(self, sql: str) -> None:
+    def execute(self, sql: str) -> list[dict[str, Any]]:
         """Management statements (CREATE DATASOURCE, REGISTER ..., SHOW ...). Used by init scripts only."""
-        self._run(self._one_statement(sql), 1000)
+        res = self._run(self._one_statement(sql), 1000)
+        return [dict(zip(res.get("headers", []), row)) for row in res.get("data", [])]
