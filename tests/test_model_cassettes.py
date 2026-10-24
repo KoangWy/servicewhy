@@ -1,0 +1,65 @@
+import json
+from pathlib import Path
+
+import pytest
+
+from app.adapters.model import CassetteMiss, ModelAdapter, ModelBudgetExceeded, cassette_key, extract_json
+from app.worldmodel.store import WorldStoreService
+from meterless_gate import fake_generator, run
+
+FIXTURES = Path(__file__).parent / "fixtures" / "cassettes"
+
+
+def test_world_model_gate_runs_green_in_replay_mode_against_fixture_cassette(tmp_path):
+    adapter = ModelAdapter("replay", cassette_dir=FIXTURES)
+    out = run(adapter.generator("writer"), "r1", tmp_path / "wm.jsonl")
+    assert out["cited"] == [out["evidence"]]
+    assert WorldStoreService(tmp_path / "wm.jsonl").get(out["finding"])["evidence_ids"] == [out["evidence"]]
+    assert out["session"] == adapter.session_id
+
+
+def test_cassette_miss_is_a_named_hard_failure_never_a_live_call(tmp_path):
+    def live(*a, **k):
+        raise AssertionError("replay mode must never reach the network")
+    adapter = ModelAdapter("replay", cassette_dir=tmp_path, live=live)
+    with pytest.raises(CassetteMiss, match="role=planner"):
+        adapter.complete("planner", "an unrecorded prompt")
+
+
+def test_record_masks_secrets_and_replay_returns_the_recording(tmp_path, monkeypatch):
+    monkeypatch.setenv("MODEL_API_KEY", "sk-very-secret-123")
+    def live(prompt, system_prompt=None, **_):
+        return {"text": "answer mentioning sk-very-secret-123", "model": "m"}
+    rec = ModelAdapter("record", cassette_dir=tmp_path, live=live)
+    rec.complete("writer", "prompt with sk-very-secret-123", "sys")
+    files = list(tmp_path.rglob("*.json"))
+    assert len(files) == 1 and "sk-very-secret-123" not in files[0].read_text()
+    assert files[0].stem == cassette_key("writer", "sys", "prompt with sk-very-secret-123")
+    replay = ModelAdapter("replay", cassette_dir=tmp_path)
+    assert replay.complete("writer", "prompt with sk-very-secret-123", "sys")["text"] == "answer mentioning …redacted"
+
+
+def test_keys_depend_on_role_and_prompt():
+    assert cassette_key("planner", None, "p") != cassette_key("writer", None, "p")
+    assert cassette_key("planner", None, "p") != cassette_key("planner", None, "p2")
+
+
+def test_live_fails_over_to_backup_on_transport_errors():
+    import urllib.error
+    def primary(*a, **k):
+        raise urllib.error.URLError("down")
+    def backup(prompt, system_prompt=None, **_):
+        return {"text": "from backup", "model": "b"}
+    a = ModelAdapter("live", live=primary, backup=backup)
+    assert a.complete("writer", "p")["text"] == "from backup"
+
+
+def test_call_budget_is_bounded():
+    a = ModelAdapter("fake", max_calls=1, fake=lambda role, sys, prompt: "{}")
+    a.complete("planner", "p")
+    with pytest.raises(ModelBudgetExceeded):
+        a.complete("planner", "p")
+
+
+def test_extract_json_from_fenced_output():
+    assert extract_json('Sure:\n```json\n{"verdict": "pass", "reason": "ok"}\n```') == {"verdict": "pass", "reason": "ok"}
