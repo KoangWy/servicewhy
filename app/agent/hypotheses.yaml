@@ -5,6 +5,8 @@
 # tables_per_server this is the dose-response). `filters` narrow the segment for one plan only.
 # `descriptive: true` evidence is reported but never counts as causal support (V3).
 # Templates may use {section} {tables_per_server} {bussers_on} {window} {theme} {focus} {weekdays}.
+# A cause template may be {when: <metric>[@<contrast_type>], text: ...}: used only if such evidence supports it,
+# so a finding never says more than its evidence (e.g. "revenue per party fell" needs revenue-per-party support).
 
 - id: H_DEMAND
   family: volume
@@ -21,7 +23,11 @@
   family: check_size
   statement: Revenue per party fell because guests spent less or more tickets were comped
   keywords: [check size, spend, comps, revenue per party, average ticket, discounts]
-  cause: ["Revenue per party fell {focus}, concentrated in section {section}", "Revenue per party fell {focus}: guests spent less and more tickets were comped"]
+  cause:
+    - {when: net_revenue_per_party@period_vs_baseline, text: "Revenue per party fell {focus}, concentrated in section {section}"}
+    - {when: net_revenue_per_party@period_vs_baseline, text: "Revenue per party fell {focus}: guests spent less and more tickets were comped"}
+    - {when: comp_rate@period_vs_baseline, text: "More tickets were comped {focus} than in the baseline"}
+    - {when: net_revenue_per_party@cross_section, text: "Section {section} brought in less revenue per party than the other sections {focus}"}
   negative: "Revenue per party {focus} was in line with the baseline"
   uncertainty: "Spend, comps and service delays move together; this contrast alone cannot say which came first"
   action: "Review comps and missed add-on rounds in section {section} {focus}; pair with the staffing finding before changing prices"

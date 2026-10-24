@@ -72,7 +72,9 @@ class Writer:
         statement = f"{hyp['statement']} ({scope_label})"
         cited = sorted(supporting, key=lambda e: -abs(e["rel"] or 0)) + [e for e in passed if e not in supporting]
         f = {
-            "cause_hypothesis": fill(hyp["cause"], found, statement),
+            "cause_hypothesis": fill(_causes(hyp["cause"], {e["metric"] for e in supporting}
+                                             | {f"{e['metric']}@{e['contrast_type']}" for e in supporting}),
+                                     found, statement),
             "evidence": [{"evidence_id": e["id"], "source": e["source"], "query": e["query"], "metric": e["metric"],
                           "contrast": e["contrast"], "group": e["group"], "value": _r(e["value"]),
                           "baseline": _r(e["baseline"]), "n": e["n"], "n_baseline": e["n_baseline"],
@@ -173,6 +175,12 @@ class Writer:
         if blocked:
             parts.append("Blocked for insufficient evidence: " + "; ".join(b["statement"] for b in blocked) + ".")
         return " ".join(parts)
+
+
+def _causes(templates: str | list, supported_metrics: set[str]) -> list[str]:
+    items = [templates] if isinstance(templates, str) else templates
+    return [t if isinstance(t, str) else t["text"] for t in items
+            if isinstance(t, str) or t.get("when") in supported_metrics]
 
 
 def _r(v: Any) -> Any:
