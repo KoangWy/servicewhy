@@ -1,0 +1,66 @@
+{
+  "run_id": "sample-q2",
+  "status": "success",
+  "question": "Did the new menu cause the drop?",
+  "output": {
+    "answer_type": "insufficient_evidence",
+    "summary": "Insufficient evidence. The restaurant's data does not record menu changes, so ServiceWhy will not guess at this cause.",
+    "findings": [],
+    "recommendations": [],
+    "not_causes": [],
+    "insufficient": [],
+    "revenue_split": null,
+    "plan": {
+      "intent": "abstain",
+      "target_metric": null,
+      "slots": {
+        "weekday": "sat",
+        "date": null,
+        "period": null,
+        "service": "dinner",
+        "section": null,
+        "window": null,
+        "compare_previous": false
+      },
+      "hypotheses": [],
+      "policy_notes": [],
+      "missing_data": "menu changes"
+    },
+    "scopes": {},
+    "steps": 0,
+    "data_as_of": "2026-10-04",
+    "mode": {
+      "sample_mode": false,
+      "data": "local-sqlite (keyless dev/test stand-in for Zetaris)",
+      "model": "fake-offline",
+      "model_mode": "fake",
+      "model_calls": 1
+    },
+    "artifacts": [
+      "logs/trace-sample-q2.jsonl",
+      "logs/worldmodel-sample-q2.jsonl"
+    ],
+    "parent_finding": null
+  },
+  "agents": [
+    {
+      "name": "Planner",
+      "role": "Turns the question into at most three hypotheses from the library and a query plan"
+    },
+    {
+      "name": "Investigator",
+      "role": "Runs federated queries through Zetaris and turns results into contrast-backed evidence"
+    },
+    {
+      "name": "Verifier",
+      "role": "Re-queries every number independently, enforces sample size, contrast and decoy rules, and can block"
+    },
+    {
+      "name": "Writer",
+      "role": "Writes findings and the answer; every number cites a verified evidence item"
+    }
+  ],
+  "trace_id": "trace-sample-q2",
+  "log_file": "logs/trace-sample-q2.jsonl",
+  "execution_time_seconds": 0.01
+}

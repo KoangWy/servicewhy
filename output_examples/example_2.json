@@ -1,0 +1,106 @@
+{
+  "run_id": "sample-q8",
+  "status": "success",
+  "question": "Is the kitchen slow on Saturdays?",
+  "output": {
+    "answer_type": "answer",
+    "summary": "No. The kitchen was not slow on Sat 03 Oct: fire-to-bump time was in line with the baseline (11.5 min vs 11.9 min, n=46) [evd_0e252991d9ff].",
+    "findings": [],
+    "recommendations": [],
+    "not_causes": [
+      {
+        "statement": "Kitchen fire-to-bump times rose",
+        "hypothesis_id": "hyp_1a070505b7d7",
+        "family": "service_delay",
+        "negative": "The kitchen was not slow on Sat 03 Oct: fire-to-bump time was in line with the baseline",
+        "evidence": [
+          {
+            "evidence_id": "evd_0e252991d9ff",
+            "metric": "kitchen_min",
+            "value": 11.536318100988865,
+            "baseline": 11.884575469587087,
+            "n": 46,
+            "unit": "min"
+          }
+        ]
+      }
+    ],
+    "insufficient": [],
+    "revenue_split": null,
+    "plan": {
+      "intent": "probe",
+      "target_metric": "kitchen_min",
+      "slots": {
+        "weekday": "sat",
+        "date": null,
+        "period": null,
+        "service": null,
+        "section": null,
+        "window": null,
+        "compare_previous": false
+      },
+      "hypotheses": [
+        "H_KITCHEN"
+      ],
+      "policy_notes": [],
+      "missing_data": null
+    },
+    "scopes": {
+      "H_KITCHEN": {
+        "focus": [
+          "2026-10-03"
+        ],
+        "baseline": [
+          "2026-09-26",
+          "2026-09-19",
+          "2026-09-12",
+          "2026-09-05"
+        ],
+        "weekdays": [
+          "sat"
+        ],
+        "service": null,
+        "section": null,
+        "window": null,
+        "level": 0,
+        "label": "on Sat 03 Oct",
+        "as_of": "2026-10-04"
+      }
+    },
+    "steps": 1,
+    "data_as_of": "2026-10-04",
+    "mode": {
+      "sample_mode": false,
+      "data": "local-sqlite (keyless dev/test stand-in for Zetaris)",
+      "model": "fake-offline",
+      "model_mode": "fake",
+      "model_calls": 3
+    },
+    "artifacts": [
+      "logs/trace-sample-q8.jsonl",
+      "logs/worldmodel-sample-q8.jsonl"
+    ],
+    "parent_finding": null
+  },
+  "agents": [
+    {
+      "name": "Planner",
+      "role": "Turns the question into at most three hypotheses from the library and a query plan"
+    },
+    {
+      "name": "Investigator",
+      "role": "Runs federated queries through Zetaris and turns results into contrast-backed evidence"
+    },
+    {
+      "name": "Verifier",
+      "role": "Re-queries every number independently, enforces sample size, contrast and decoy rules, and can block"
+    },
+    {
+      "name": "Writer",
+      "role": "Writes findings and the answer; every number cites a verified evidence item"
+    }
+  ],
+  "trace_id": "trace-sample-q8",
+  "log_file": "logs/trace-sample-q8.jsonl",
+  "execution_time_seconds": 0.23
+}

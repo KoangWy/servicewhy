@@ -1,0 +1,9 @@
+{
+  "run_id": "sample-q8",
+  "input": {
+    "query": "Is the kitchen slow on Saturdays?"
+  },
+  "options": {
+    "sample_mode": false
+  }
+}

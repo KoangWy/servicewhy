@@ -1,0 +1,9 @@
+{
+  "run_id": "sample-q1",
+  "input": {
+    "query": "Why did Saturday dinner revenue drop 18%?"
+  },
+  "options": {
+    "sample_mode": false
+  }
+}
