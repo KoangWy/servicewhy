@@ -353,8 +353,13 @@ Kill rule (refines `decisions/0002`): if EOD 10-25 has no end-to-end why-answer,
 and UI extras — keep exactly one question flow + verifier + scorecard. Sponsor gates failing at
 noon 10-24 still means direction A per `decisions/0002`.
 
-Roles: Huy — Zetaris, Meterless, adapters, agent core. Khoa — simulator parameters, report/UI
-content, README, demo, HackOS submission.
+Roles (amended 2026-10-24 evening, per strategy-repo `decisions/0004`): **Khoa (Lemoris2)
+implements the whole system** — backend, agent core, UI, compose, scripts, README — working
+keyless (tests, SAMPLE_MODE, model cassettes) from the specs and tickets. **Huy (KoangWy)** owns
+specs/architecture, holds the only FULL-mode environment (Zetaris + Meterless + API keys) and runs
+the QA gate: 10-25 evening FULL smoke, then 10-26 tuning + scorecard publish (= freeze). Demo
+production is deferred until after QA passes, still before the deadline. Khoa keeps the HackOS
+placeholder (`decisions/0003`).
 
 ## 14. Security, privacy, compliance
 
@@ -367,7 +372,8 @@ Vietnamese law (Decree 13/2023) noted in the README's limitations for any future
 
 - Snapshot of the HackOS chat message dropping the Cursor requirement (needs login — team to copy
   text/screenshot into `docs/` with provenance) · Huy or Khoa · before submission write-up.
-- DeepInfra backup model id picked at wiring (from its live catalog) · Huy · 10-25.
+- DeepInfra backup model id picked at wiring (from its live catalog; keyless to list) · Khoa ·
+  10-25, verified in Huy's QA run.
 - MinIO filestore registration spike inside the Zetaris bundle (the "reachable storage" PATH
   question) — part of today's gate · Huy · today.
 - Zetaris local startup time on Apple Silicon — measured during today's gate; if unusable, decide
