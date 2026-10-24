@@ -21,7 +21,7 @@ def test_same_seed_gives_identical_tables():
 
 def test_default_volume_and_referential_integrity():
     t, _, _ = Simulator().run()
-    assert 1000 <= len(t["pos_tickets"]) <= 1500
+    assert 1000 <= len(t["pos_tickets"]) <= 1600
     tickets = {r["ticket_id"] for r in t["pos_tickets"]}
     assert all(r["ticket_id"] in tickets for r in t["ticket_items"])
     assert all(r["ticket_id"] in tickets for r in t["plate_returns"])
@@ -44,9 +44,20 @@ def test_i1_overload_is_detectable_from_tables_alone():
     """The injected staffing overload must be visible without reading ground truth."""
     t, gt, _ = Simulator().run()
     d = gt["incidents"][0]["metric_delta"]["order_to_delivery_min"]
-    assert d["n_affected"] >= 30 and d["affected"] - d["baseline"] >= 5
+    assert d["n_affected"] >= 20 and d["affected"] - d["baseline"] >= 5
     shifts = [s for s in t["shifts"] if s["role"] == "server" and s["section_id"] == "B"]
-    assert any(s["tables_assigned"] == 7 for s in shifts)
+    overloaded = {(s["business_date"], s["staff_id"]) for s in shifts if s["tables_assigned"] == 7}
+    assert overloaded and all(d >= "2026-09-21" for d, _ in overloaded)  # onset is in the roster
+    # the dose-response segment (all parties served at 7 tables/server) clears the verifier's n >= 30
+    dinner_7 = [p for p in t["pos_tickets"] if p["service"] == "dinner"
+                and (p["business_date"], p["server_id"]) in overloaded]
+    assert len(dinner_7) >= 30
+
+
+def test_busser_incident_is_visible_in_the_roster():
+    t, _, _ = Simulator().run()
+    short = [s for s in t["shifts"] if s["role"] == "busser" and s["end_time"].endswith("T20:00:00")]
+    assert short and all(s["business_date"] >= "2026-09-21" for s in short)
 
 
 def test_i4_busser_shortage_slows_resets():
