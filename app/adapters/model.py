@@ -140,7 +140,7 @@ class ModelAdapter:
             rec = {"role": role, "key": key, "model": out.get("model"), "recorded_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                    "system_prompt": mask_secrets(system_prompt or ""), "prompt": mask_secrets(prompt),
                    "response": {"text": mask_secrets(out["text"])}}
-            path.write_text(json.dumps(rec, indent=2, ensure_ascii=False), encoding="utf-8")
+            path.write_text(json.dumps(rec, indent=2, ensure_ascii=False), encoding="utf-8", newline="\n")
         return {"text": out["text"], "session": self.session_id, "source": self.mode, "usage": out.get("usage")}
 
     def complete_json(self, role: str, prompt: str, system_prompt: str | None = None) -> tuple[dict[str, Any], dict]:

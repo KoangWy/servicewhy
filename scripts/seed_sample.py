@@ -66,8 +66,29 @@ def record(settings: Settings, out: Path, *, with_report: bool = True) -> dict:
                 keep(r)
                 bundle["runs"].append({"id": r["run_id"], "question": r["question"], "context": None, "response": r})
             bundle["report"] = rep
-    (out / "sample_bundle.json").write_text(json.dumps(bundle, indent=1, default=str), encoding="utf-8")
+    (out / "sample_bundle.json").write_text(json.dumps(bundle, indent=1, default=str), encoding="utf-8", newline="\n")
     return bundle
+
+
+EXAMPLES = {"Q1": "example_1", "Q8": "example_2", "Q2": "example_3"}  # demo, non-cause probe, abstention
+
+
+def write_examples(bundle: dict, root: Path = ROOT) -> list[Path]:
+    """Three judge-facing input/output pairs, taken from the recorded runs (Technical Execution Guide)."""
+    written = []
+    for r in bundle["runs"]:
+        name = EXAMPLES.get(r["id"])
+        if not name:
+            continue
+        inp = {"run_id": r["response"]["run_id"], "input": {"query": r["question"]}, "options": {"sample_mode": False}}
+        if r.get("context"):
+            inp["input"]["context"] = r["context"]
+        for folder, doc in (("input_examples", inp), ("output_examples", r["response"])):
+            p = root / folder / f"{name}.json"
+            p.parent.mkdir(parents=True, exist_ok=True)
+            p.write_text(json.dumps(doc, indent=2, default=str) + "\n", encoding="utf-8", newline="\n")
+            written.append(p)
+    return written
 
 
 def main() -> int:
@@ -81,6 +102,8 @@ def main() -> int:
         return 2
     out = args.out or s.sample_dir
     b = record(s, out)
+    if args.out is None:
+        write_examples(b)
     ok = sum(r["response"]["status"] == "success" for r in b["runs"])
     print(json.dumps({"out": str(out), "runs": len(b["runs"]), "succeeded": ok, "recorded_with": b["recorded_with"]}))
     return 0 if ok == len(b["runs"]) else 1

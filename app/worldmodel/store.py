@@ -52,7 +52,7 @@ class WorldStoreService:
             return False
         rec = {"v": SCHEMA_VERSION, "ts": time.time(), "op": "put", "kind": kind, "id": entity_id,
                "data": data, "agent_id": agent_id, "run_id": run_id}
-        with self.log_path.open("a", encoding="utf-8") as fh:
+        with self.log_path.open("a", encoding="utf-8", newline="\n") as fh:
             fh.write(json.dumps(rec, sort_keys=True, default=str) + "\n")
             fh.flush()
         self._apply(rec)

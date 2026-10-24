@@ -44,7 +44,7 @@ class Registry:
                    "decision": DECISIONS[decision], "role": role, "note": note,
                    "recommended_action": f.get("recommended_action")}
             self.logs_dir.mkdir(parents=True, exist_ok=True)
-            with (self.logs_dir / "approvals.jsonl").open("a", encoding="utf-8") as fh:
+            with (self.logs_dir / "approvals.jsonl").open("a", encoding="utf-8", newline="\n") as fh:
                 fh.write(json.dumps(rec) + "\n")
             f["status"] = rec["decision"]
             f.setdefault("approvals", []).append(rec)

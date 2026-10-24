@@ -27,7 +27,7 @@ class Trace:
         self.run_id = run_id
         self.path = Path(logs_dir) / f"trace-{run_id}.jsonl"
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        self.path.write_text("", encoding="utf-8")
+        self.path.write_text("", encoding="utf-8", newline="\n")
         self.echo, self.events = echo, []
 
     def emit(self, event: str, agent_name: str, action: str, *, input_summary: str = "", output_summary: str = "",
@@ -47,7 +47,7 @@ class Trace:
             rec["verdict"] = verdict
         if data:
             rec["data"] = json.loads(mask_secrets(json.dumps(data, default=str)))
-        with self.path.open("a", encoding="utf-8") as fh:
+        with self.path.open("a", encoding="utf-8", newline="\n") as fh:
             fh.write(json.dumps(rec, default=str) + "\n")
         self.events.append(rec)
         if self.echo and event != "wm_mutation":

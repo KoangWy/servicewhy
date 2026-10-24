@@ -1,0 +1,31 @@
+# Judge-facing commands (IMPL_SPEC #22). On Windows without make, run the right-hand commands directly.
+PY ?= python
+
+.PHONY: up down seed e2e e2e-full scorecard sample record-sample test
+
+up:            ## full stack: api, ui, postgres, minio (Zetaris bundle runs from its own compose, see README)
+	docker compose up -d --build
+
+down:
+	docker compose down
+
+seed:          ## fresh seeded data -> Postgres + Parquet on MinIO -> idempotent Zetaris registration
+	$(PY) -m app.sim.load
+
+e2e:           ## keyless proof: local store + cassettes (fake model until real cassettes exist)
+	$(PY) scripts/e2e.py
+
+e2e-full:      ## QA machine: seed + Zetaris + keyed model
+	$(PY) scripts/e2e.py --full
+
+scorecard:     ## ten canned questions joined with ground truth -> logs/scorecard.md
+	$(PY) -m app.scorecard.harness
+
+sample:        ## serve the recorded run: zero network, zero services
+	SAMPLE_MODE=true $(PY) run.py
+
+record-sample: ## re-record logs/examples from the configured backends
+	$(PY) scripts/seed_sample.py
+
+test:
+	$(PY) -m pytest -q
