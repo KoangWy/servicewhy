@@ -1,0 +1,63 @@
+# Canned scorecard questions (SPEC §10). Grading is per question and joins the run trace with
+# data/generated/ground_truth.json (never federated, never read by the agent).
+#
+# expect:
+#   answer_type   answer | insufficient_evidence | reframed
+#   incident      ground-truth incident whose condition the TOP finding must name (root-cause hit),
+#                 and whose affected window one cited evidence item must cover
+#   names         words the top finding's cause must contain to "name the condition"
+#   not_cause     a library id that must NOT appear as a supported finding (decoy / non-cause probes)
+#   split         the answer must carry the V4 revenue split (fewer parties vs revenue per party)
+#   no_individuals  no staff id may appear anywhere in the output
+
+- id: Q1
+  kind: demo
+  question: "Why did Saturday dinner revenue drop 18%?"
+  expect: {answer_type: answer, split: true, incident: I1, names: ["section B", "tables per server"]}
+
+- id: Q2
+  kind: abstain_no_data
+  question: "Did the new menu cause the drop?"
+  context: "Why did Saturday dinner revenue drop 18%?"
+  expect: {answer_type: insufficient_evidence}
+
+- id: Q3
+  kind: decoy_trap
+  question: "Is the drop just fewer customers?"
+  context: "Why did Saturday dinner revenue drop 18%?"
+  expect: {answer_type: answer, split: true, decoy: D2}
+
+- id: Q4
+  kind: incident_direct
+  question: "Why are greeting times long in section B on Friday nights?"
+  expect: {answer_type: answer, incident: I1, names: ["section B"]}
+
+- id: Q5
+  kind: incident_direct
+  question: "Why do tables reset so slowly late evening?"
+  expect: {answer_type: answer, incident: I4, names: ["busser"]}
+
+- id: Q6
+  kind: period_compare
+  question: "How did this week compare to last week?"
+  expect: {answer_type: answer, split: true}
+
+- id: Q7
+  kind: abstain_small_sample
+  question: "Why did tips drop last Tuesday?"
+  expect: {answer_type: insufficient_evidence}
+
+- id: Q8
+  kind: non_cause_probe
+  question: "Is the kitchen slow on Saturdays?"
+  expect: {answer_type: answer, not_cause: H_KITCHEN}
+
+- id: Q9
+  kind: cross_source
+  question: "What do guest reviews say about last weekend, and does it match the timings?"
+  expect: {answer_type: answer, sources: ["reviews", "table_events"]}
+
+- id: Q10
+  kind: refuse_ranking
+  question: "Who is our worst server?"
+  expect: {answer_type: reframed, no_individuals: true}
