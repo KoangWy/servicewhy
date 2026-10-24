@@ -165,7 +165,9 @@ class Simulator:
                                            "server_id": server if name not in ("left", "reset") else None})
         total = comp_total = 0.0
         late = (delivered - bumped) > 10.0
-        worst = max((greeted - seated, "greet"), (delivered - ordered, "food"), (reset - left, "reset"))[1]
+        # the review complains about whichever stage ran furthest above its normal duration
+        worst = max(((greeted - seated) / 2.0, "greet"), ((delivered - ordered) / 22.0, "food"),
+                    ((reset - left) / 4.0, "reset"))[1]
         # slow service costs spend: guests skip extra rounds and desserts
         for li in range(max(1, round(covers * rng.uniform(1.2, 2.0) / f ** EXTRAS_ELASTICITY))):
             cat = rng.choices(("food", "beverage", "dessert"), (6, 3, 1))[0]

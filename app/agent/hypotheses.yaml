@@ -1,0 +1,79 @@
+# Hypothesis library (data, not code). Adding a cause = appending an entry; the Planner reads this file.
+#
+# plans: metric x contrast x segment. contrast `compare` = focus dates vs baseline dates; contrast
+# `group` = groups along one dimension inside the focus dates (worst group vs the rest; for
+# tables_per_server this is the dose-response). `filters` narrow the segment for one plan only.
+# `descriptive: true` evidence is reported but never counts as causal support (V3).
+# Templates may use {section} {tables_per_server} {bussers_on} {window} {theme} {focus} {weekdays}.
+
+- id: H_DEMAND
+  family: volume
+  statement: Fewer parties came in than the baseline, a demand-side dip rather than a service failure
+  keywords: [fewer customers, traffic, volume, covers, demand, weather, rain, quiet, busy]
+  cause: ["Fewer parties came in {focus} than the baseline (demand-side: weather, events or seasonality)"]
+  negative: "Party counts {focus} were in line with the baseline"
+  uncertainty: "There is no weather or events feed; the demand-side cause is inferred from fewer parties, not observed"
+  action: "Treat this share of the drop as demand-side: check external factors (weather, local events) before changing staffing"
+  plans:
+    - {metric: parties, contrast: compare}
+
+- id: H_SPEND
+  family: check_size
+  statement: Revenue per party fell because guests spent less or more tickets were comped
+  keywords: [check size, spend, comps, revenue per party, average ticket, discounts]
+  cause: ["Revenue per party fell {focus}, concentrated in section {section}", "Revenue per party fell {focus}: guests spent less and more tickets were comped"]
+  negative: "Revenue per party {focus} was in line with the baseline"
+  uncertainty: "Spend, comps and service delays move together; this contrast alone cannot say which came first"
+  action: "Review comps and missed add-on rounds in section {section} {focus}; pair with the staffing finding before changing prices"
+  plans:
+    - {metric: net_revenue_per_party, contrast: compare}
+    - {metric: comp_rate, contrast: compare}
+    - {metric: net_revenue_per_party, contrast: group, dim: section}
+
+- id: H_SERVER_LOAD
+  family: staffing
+  statement: Servers covering too many tables slowed greeting and delivery
+  keywords: [server, tables per server, understaffed, greeting, greet, slow service, section, waiting]
+  cause: ["Section {section} ran {tables_per_server} tables per server {focus}; order-to-delivery and greeting slowed there", "Parties served at {tables_per_server} tables per server waited longer for food {focus}"]
+  negative: "Service times did not rise with tables per server {focus}"
+  uncertainty: "Cannot separate greeting lag from order lag inside section {section}; tables per server is the roster value, not observed coverage"
+  action: "Add one server to section {section} {focus}, capping load at 5 tables per server"
+  plans:
+    - {metric: order_to_delivery_min, contrast: group, dim: tables_per_server}
+    - {metric: order_to_delivery_min, contrast: group, dim: section}
+    - {metric: greet_min, contrast: group, dim: section}
+
+- id: H_BUSSER
+  family: staffing
+  statement: Too few bussers on duty slowed table resets late in the evening
+  keywords: [busser, reset, clearing, turn, table turnover, late evening, dirty tables]
+  cause: ["Only {bussers_on} busser on duty during {window} {focus}; tables took longer to reset", "With only {bussers_on} busser on duty, tables took longer to reset {focus}"]
+  negative: "Table reset times {focus} did not depend on how many bussers were on duty"
+  uncertainty: "Reset time also depends on party size and table layout, which are not recorded"
+  action: "Keep a second busser on until close {focus} instead of releasing them at the start of {window}"
+  plans:
+    - {metric: reset_min, contrast: group, dim: bussers_on, filters: {service: dinner}}
+    - {metric: reset_min, contrast: group, dim: window, filters: {service: dinner}}
+
+- id: H_KITCHEN
+  family: service_delay
+  statement: Kitchen fire-to-bump times rose
+  keywords: [kitchen, cooks, line, ticket time, food prep]
+  cause: ["Kitchen fire-to-bump time rose {focus}"]
+  negative: "The kitchen was not slow {focus}: fire-to-bump time was in line with the baseline"
+  uncertainty: "Kitchen times are recorded per ticket, not per dish or station"
+  action: "Review kitchen station staffing {focus}"
+  plans:
+    - {metric: kitchen_min, contrast: compare}
+
+- id: H_REVIEWS
+  family: guest_sentiment
+  statement: Guest reviews worsened and name the slow stage
+  keywords: [reviews, guests say, ratings, complaints, feedback, stars]
+  cause: ["Low-rated reviews rose {focus}; the most common complaint was \"{theme}\"", "Low-rated reviews rose {focus}"]
+  negative: "Review ratings {focus} were in line with the baseline"
+  uncertainty: "Reviews are not linked to tickets; they are matched to service timings by date only"
+  action: "Use the complaint theme to target the matching staffing finding; reply to low-rated reviews {focus}"
+  plans:
+    - {metric: low_rating_share, contrast: compare}
+    - {metric: review_count, contrast: group, dim: theme, filters: {low_rating_only: true}, descriptive: true}

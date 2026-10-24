@@ -9,7 +9,7 @@ import hashlib
 import json
 import time
 from pathlib import Path
-from typing import Any, Iterator
+from typing import Any, Callable, Iterator
 
 SCHEMA_VERSION = 1
 
@@ -21,8 +21,9 @@ def stable_id(kind: str, *parts: str) -> str:
 
 
 class WorldStoreService:
-    def __init__(self, log_path: str | Path):
+    def __init__(self, log_path: str | Path, *, on_mutation: Callable[[dict[str, Any]], None] | None = None):
         self.log_path = Path(log_path)
+        self.on_mutation = on_mutation
         self.log_path.parent.mkdir(parents=True, exist_ok=True)
         self._entities: dict[str, dict[str, Any]] = {}
         self._replay()
@@ -30,7 +31,7 @@ class WorldStoreService:
     def _replay(self) -> None:
         if not self.log_path.exists():
             return
-        for line in self.log_path.read_text().splitlines():
+        for line in self.log_path.read_text(encoding="utf-8").splitlines():
             if not line.strip():
                 continue
             try:
@@ -51,10 +52,12 @@ class WorldStoreService:
             return False
         rec = {"v": SCHEMA_VERSION, "ts": time.time(), "op": "put", "kind": kind, "id": entity_id,
                "data": data, "agent_id": agent_id, "run_id": run_id}
-        with self.log_path.open("a") as fh:
-            fh.write(json.dumps(rec, sort_keys=True) + "\n")
+        with self.log_path.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(rec, sort_keys=True, default=str) + "\n")
             fh.flush()
         self._apply(rec)
+        if self.on_mutation:
+            self.on_mutation(rec)
         return True
 
     def get(self, entity_id: str) -> dict[str, Any] | None:

@@ -34,6 +34,9 @@ def _http(url: str, body: dict | None, headers: dict) -> dict:
 
 
 class DataAccessAdapter:
+    dialect = "spark"
+    channel = "Zetaris federated SQL (REST)"
+
     def __init__(self, *, rest_url: str, login_url: str, user: str, password: str,
                  transport: Transport = _http):
         self.rest_url, self.login_url = rest_url.rstrip("/"), login_url.rstrip("/")
