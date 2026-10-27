@@ -1,7 +1,10 @@
 # Judge-facing commands (IMPL_SPEC #22). On Windows without make, run the right-hand commands directly.
 PY ?= python
 
-.PHONY: up down seed e2e e2e-full scorecard sample record-sample record-e2e test
+.PHONY: full up down seed e2e e2e-full scorecard sample record-sample record-e2e test
+
+full:          ## FULL mode in one command: preflight (.env, Docker, Zetaris, Nightshift) -> compose up -> seed (README: Run it -> B)
+	bash scripts/up-full.sh
 
 up:            ## full stack: api, ui, postgres, minio (Zetaris bundle runs from its own compose, see README)
 	docker compose up -d --build
