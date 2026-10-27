@@ -13,7 +13,12 @@ retries on a wider sample, or answers "insufficient evidence".
 ## Run it in two minutes (no credentials)
 
 SAMPLE mode replays recorded runs through the same API and UI. It makes no network calls, needs no
-keys and starts no Zetaris, Postgres or MinIO.
+keys and starts no Zetaris, Postgres or MinIO. **It is a replay, not a live agent:** the API looks up the
+stored response for the normalised question text (`app/sample.py`), and every response says so
+(`mode.sample_mode`, `recorded_with`). The recordings come from a real FULL-mode run (Zetaris and a live
+model), and the traces show every plan, query, verdict, block and retry from that run. To see the agent
+execute, use FULL mode below, or `make e2e` (the real orchestrator on a local seeded store, with the
+recorded model responses replayed).
 
 ```bash
 git clone https://github.com/KoangWy/servicewhy && cd servicewhy
@@ -84,16 +89,27 @@ Causes are always **staffing or process conditions** (section, shift, time windo
 | V4 | Decoy split: how much of a revenue change fewer parties explain vs revenue per party | volume share ≥ 50% | downgrade service findings and force the split into the answer |
 | V5 | Retry budget | > 2 rejections | "insufficient evidence" |
 
-Thresholds live in `app/agent/verifier.py` (`THRESHOLDS`). They are **initial values**. They get tuned once on real runs before the feature freeze. After that they and the simulator parameters are frozen, and the freeze is the commit that publishes the scorecard below. The same single pass also covers the verifier's model-judgment prompt (`SYSTEM` in `app/agent/verifier.py`) and the hypothesis library's claim and cause wording (`app/agent/hypotheses.yaml`), which freeze with them. That pass used recorded verifier prompts and canned-question traces only; simulator ground truth is read by the scorecard harness alone.
+Thresholds live in `app/agent/verifier.py` (`THRESHOLDS`). They are **initial values**, tuned in one pass on real runs before the feature freeze. The same pass covers the verifier's model-judgment prompt (`SYSTEM` in `app/agent/verifier.py`) and the hypothesis library's claim and cause wording (`app/agent/hypotheses.yaml`). The freeze is the commit that publishes the scorecard below: from it on, the thresholds, those prompts and the simulator parameters do not change (UI-only changes may follow). The pass worked from recorded verifier prompts and evidence payloads plus synthetic negative controls, and simulator ground truth was never an input to it. The pass was also checked against the scorecard questions: three live scorecard runs took the baseline from 2/10 to 8/10. **The published 8/10 is therefore an in-sample number** (same seed, same ten questions), not a held-out test.
 
 Runs are bounded: at most 3 hypotheses, 2 retries each, 12 investigate+verify steps per run, 60 s per model call and 40 model calls per run.
 
 ## Sponsor technology
 
 - **Zetaris** is the single federated SQL surface. POS tickets, ticket items and table events live in PostgreSQL. Rosters, plate returns and reviews live as Parquet on MinIO. Both are registered by `scripts/init_zetaris.py` (CREATE DATASOURCE, REGISTER DATASOURCE TABLE, CREATE LIGHTNING DATABASE, CREATE LIGHTNING FILESTORE TABLE). Every Investigator query joins the two stores in one statement (`app/metrics.py`). The Verifier's independent V1 re-query goes through Zetaris again. Remove Zetaris and the agent cannot read its data.
-- **Meterless** provides the World Model agent engine, implemented in-repo after the Meterless reference architecture (`app/worldmodel/`). `WorldStoreService` is an append-only, replayable store with content-hash ids. `IngestPipelineService` gives idempotent, resumable writes with provenance. `ContextBuilderService` builds the structured payloads the Verifier and Writer read. Every mutation is a `wm_mutation` trace event and a line in `logs/worldmodel-<run_id>.jsonl`.
-- **Cursor** is the development environment. The project invariants are committed in `.cursor/rules/`. Sponsor credit was never released during the event.
+- **Meterless** provides the World Model agent engine, implemented in-repo after the Meterless reference architecture (`app/worldmodel/`). `WorldStoreService` is an append-only, replayable store with content-hash ids. `IngestPipelineService` gives idempotent, resumable writes with provenance. `ContextBuilderService` builds the structured payload the Verifier reads (`app/agent/verifier.py`); the Writer reads hypotheses and evidence through the ingest pipeline and does not use the context builder. Meterless' engines are reference architectures, so this is our own implementation of the World Model minimum (the three services above), not a Meterless-hosted service, and model calls do not go through it. Every mutation is a `wm_mutation` trace event and a line in `logs/worldmodel-<run_id>.jsonl`.
+- **Cursor** was almost not used. Development was done with Claude as the coding assistant (17 of the 21 commits made before this section was written carry a `Co-Authored-By: Claude` trailer). The repository carries the project rules in `.cursor/rules/`, but the team never received Cursor sponsor credit and did not use Cursor as its development environment. A HackOS chat message told us the Cursor requirement had been dropped. We could not verify it, so we state the facts here and leave the judgement to the reviewers.
 - **NVIDIA** is not used in the core build.
+
+## AI and model usage
+
+- **Model:** `deepseek-v4.1-flash` through OpenCode Go (an OpenAI-compatible endpoint, `MODEL_BASE_URL`) for the Planner's hypothesis selection, the Verifier's one structured pass/block judgment and the Writer's prose. An optional backup provider (DeepInfra, also OpenAI-compatible) takes over after repeated transport errors when `MODEL_BACKUP_API_KEY` is set. The model never writes SQL, never recomputes a number and never sees ground truth.
+- **Agent framework:** none. The Planner, Investigator, Verifier and Writer and their orchestrator are written in this repository (`app/agent/`, `app/orchestrator.py`). The World Model services (`app/worldmodel/`) are implemented from Meterless' World Model reference architecture.
+- **Sponsor technology:** see [Sponsor technology](#sponsor-technology). Cursor was almost not used and NVIDIA is not used.
+- **Libraries:** `requirements.txt` (FastAPI, Uvicorn, PyYAML, plus pyarrow, psycopg and minio for the loader only) and `ui/package.json` (React, Vite, Tailwind CSS). Zetaris runs as its own local Docker bundle.
+- **Data:** entirely synthetic, generated by the seeded simulator in `app/sim/`. No real people, venue or customer data.
+- **AI-assisted coding:** the code was written with Claude as the coding assistant, against specifications the team wrote (`docs/SPEC.md`, `docs/IMPL_SPEC.md`) and checked with the team's own test and QA runs.
+- **Fallback:** `SAMPLE_MODE=true` replays recorded runs (see the top of this file). Recorded model responses are committed as cassettes in `cassettes/`.
+- **Known limitations:** see [Data and limitations](#data-and-limitations) and the two scorecard misses above.
 
 ## API (the UI and judges use the same endpoints)
 
@@ -115,17 +131,36 @@ Each run writes `logs/trace-<run_id>.jsonl` (schema version 1). The event set is
 
 ## Scorecard
 
-`make scorecard` runs the ten canned questions in `app/scorecard/questions.yaml` on a fresh seeded dataset. It joins each trace and World Model log with the simulator's ground truth and prints the table that is published here at the freeze. The agent never reads ground truth: only the harness loads it, and a default-suite test greps agent-side modules for any reference.
+`make scorecard` runs the ten canned questions in `app/scorecard/questions.yaml` on a fresh seeded dataset. It joins each trace and World Model log with the simulator's ground truth and prints the table published below. The agent never reads ground truth: only the harness loads it, and a default-suite test greps agent-side modules for any reference. It needs the FULL stack (Zetaris, a model key and the seeded stores), so it cannot run in SAMPLE mode.
 
 The metrics are root-cause hit rate, evidence precision, unsupported claims caught vs wrongly blocked, decoy rejection, abstention correctness and retries per investigation.
 
-**Published scorecard: pending the FULL-mode tuning run (freeze).** Simulator parameters and verifier thresholds are immutable from the commit that publishes this table.
+**Published scorecard** (one FULL-mode run: 2026-10-27, seed 20261024, Zetaris federated SQL, `deepseek-v4.1-flash`). This is the run on the code committed as `939816b`. Later commits changed the Writer's wording and number guard, the hypothesis library's cause wording, and the cassette tooling. They did not change the verifier rules, thresholds or prompt. Grading the ten recorded runs in the committed sample bundle with the same harness gave 8/10 with the same two misses.
+
+| Metric | Result |
+|---|---|
+| Root-cause hit rate (top finding names the injected condition and cites its window) | 2/3 (67%) |
+| Evidence precision (cited items that support their claim) | 17/24 (71%) |
+| Verifier: unsupported claims caught / wrongly blocked | 13 / 0 |
+| Decoy rejection rate | 1/1 (100%) |
+| Abstention correctness | 2/2 (100%) |
+| Retries per investigation | 0.3 |
+| Questions passing every check | **8/10 (80%)** |
+
+Two questions miss, and we did not change the product to hide them:
+
+- **Q1 (demo question): the root cause is ranked second.** The answer names the injected section-B condition, but as its second finding. Findings rank by confidence, the staffing finding rests on a small sample (`low`), and the spend finding, which is a symptom of the same night, comes first. Reordering causes above symptoms would satisfy the grader, but we decided it would be tuning to the answer key.
+- **Q6 (this week vs last week): no revenue split.** The seeded data holds no week-over-week revenue drop to split, which is what the grader's expectation assumes, and a retry widens "this week vs last week" to two weeks, so the answer covers a different period than the one asked.
+
+The question's "18%" is a manager's guess. The verifier recomputes the change from the data: -39% for Saturday 3 Oct against its baseline (of which fewer parties explain 17%). The agent reports the measured figure and does not adopt the premise.
+
+Simulator parameters, verifier thresholds and the tuned prompts are frozen from the commit that publishes this table.
 
 ## Development (keyless)
 
 ```bash
 pip install -r requirements-dev.txt
-python -m pytest -q                 # 77 tests; local seeded store + offline fake model, no keys, no services
+python -m pytest -q                 # 84 tests; local seeded store + offline fake model, no keys, no services
 python scripts/e2e.py               # make e2e: demo question through POST /run on the local store, replaying the recorded model; asserts every role is in the trace
 cd ui && npm ci && npm test && npm run dev   # UI on :5173, proxies /api to :8000
 ```
@@ -169,4 +204,4 @@ scripts/          init_zetaris.py, seed_sample.py, e2e.py, meterless_gate.py
 
 ## License
 
-To be decided before submission. An open licence is likely, because judges must be able to run the code.
+MIT, see [LICENSE](LICENSE).
