@@ -4,7 +4,7 @@
   "question": "Is the kitchen slow on Saturdays?",
   "output": {
     "answer_type": "answer",
-    "summary": "No. The kitchen was not slow on Sat 03 Oct: fire-to-bump time was in line with the baseline (11.5 min vs 11.9 min, n=46) [evd_0e252991d9ff].",
+    "summary": "No. The kitchen was not slow on Sat 03 Oct: fire-to-bump time was 11.538 min [evd_2678cbfd955c] against a baseline of 11.885 min [evd_2678cbfd955c], so it was in line with baseline.",
     "findings": [],
     "recommendations": [],
     "not_causes": [
@@ -15,10 +15,10 @@
         "negative": "The kitchen was not slow on Sat 03 Oct: fire-to-bump time was in line with the baseline",
         "evidence": [
           {
-            "evidence_id": "evd_0e252991d9ff",
+            "evidence_id": "evd_2678cbfd955c",
             "metric": "kitchen_min",
-            "value": 11.536318100988865,
-            "baseline": 11.884575469587087,
+            "value": 11.538405760900002,
+            "baseline": 11.8848341422,
             "n": 46,
             "unit": "min"
           }
@@ -37,7 +37,7 @@
         "service": null,
         "section": null,
         "window": null,
-        "compare_previous": false
+        "compare_previous": true
       },
       "hypotheses": [
         "H_KITCHEN"
@@ -71,9 +71,9 @@
     "data_as_of": "2026-10-04",
     "mode": {
       "sample_mode": false,
-      "data": "local-sqlite (keyless dev/test stand-in for Zetaris)",
-      "model": "fake-offline",
-      "model_mode": "fake",
+      "data": "Zetaris federated SQL (REST)",
+      "model": "deepseek-v4.1-flash",
+      "model_mode": "record-missing",
       "model_calls": 3
     },
     "artifacts": [
@@ -102,5 +102,5 @@
   ],
   "trace_id": "trace-sample-q8",
   "log_file": "logs/trace-sample-q8.jsonl",
-  "execution_time_seconds": 0.48
+  "execution_time_seconds": 4.13
 }

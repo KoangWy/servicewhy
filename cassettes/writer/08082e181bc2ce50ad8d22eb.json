@@ -1,0 +1,11 @@
+{
+  "role": "writer",
+  "key": "08082e181bc2ce50ad8d22eb",
+  "model": "deepseek-v4.1-flash",
+  "recorded_at": "2026-10-27T09:10:42Z",
+  "system_prompt": "You are the Writer of ServiceWhy. Write the manager-facing answer from verified findings only.\nName staffing or process conditions (section, shift, time window), never individual people. Every number you\nwrite must come from the input, and cite the evidence id in square brackets after it. Keep it under 120 words.\nEach not_causes entry has a \"negative\" sentence that says what was checked and for which dates: report it as stated and never\nsay the evidence lacks a day, section or shift that sentence names. State only what the findings and not_causes say; do not\nadd outcomes or recommendations that are not in recommended_action.\nReturn ONE JSON object: {\"answer\": \"...\"}.",
+  "prompt": "Write the answer.\n<<INPUT>>\n{\"blocked\": [], \"findings\": [], \"intent\": \"probe\", \"not_causes\": [{\"evidence\": [{\"baseline\": 11.885, \"evidence_id\": \"evd_2678cbfd955c\", \"metric\": \"kitchen_min\", \"n\": 46, \"unit\": \"min\", \"value\": 11.538}], \"negative\": \"The kitchen was not slow on Sat 03 Oct: fire-to-bump time was in line with the baseline\", \"statement\": \"Kitchen fire-to-bump times rose\"}], \"policy_notes\": [], \"question\": \"Is the kitchen slow on Saturdays?\", \"revenue_split\": null}\n<<END>>",
+  "response": {
+    "text": "{\"answer\": \"No. The kitchen was not slow on Sat 03 Oct: fire-to-bump time was 11.538 min [evd_2678cbfd955c] against a baseline of 11.885 min [evd_2678cbfd955c], so it was in line with baseline.\"}"
+  }
+}

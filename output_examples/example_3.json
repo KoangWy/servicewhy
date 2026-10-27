@@ -4,7 +4,7 @@
   "question": "Did the new menu cause the drop?",
   "output": {
     "answer_type": "insufficient_evidence",
-    "summary": "Insufficient evidence. The restaurant's data does not record menu changes, so ServiceWhy will not guess at this cause.",
+    "summary": "Insufficient evidence. The restaurant's data does not record menu changes and menu-item data, so ServiceWhy will not guess at this cause.",
     "findings": [],
     "recommendations": [],
     "not_causes": [],
@@ -12,7 +12,7 @@
     "revenue_split": null,
     "plan": {
       "intent": "abstain",
-      "target_metric": null,
+      "target_metric": "net_revenue",
       "slots": {
         "weekday": "sat",
         "date": null,
@@ -20,20 +20,20 @@
         "service": "dinner",
         "section": null,
         "window": null,
-        "compare_previous": false
+        "compare_previous": true
       },
       "hypotheses": [],
       "policy_notes": [],
-      "missing_data": "menu changes"
+      "missing_data": "menu changes and menu-item data"
     },
     "scopes": {},
     "steps": 0,
     "data_as_of": "2026-10-04",
     "mode": {
       "sample_mode": false,
-      "data": "local-sqlite (keyless dev/test stand-in for Zetaris)",
-      "model": "fake-offline",
-      "model_mode": "fake",
+      "data": "Zetaris federated SQL (REST)",
+      "model": "deepseek-v4.1-flash",
+      "model_mode": "record-missing",
       "model_calls": 1
     },
     "artifacts": [
@@ -62,5 +62,5 @@
   ],
   "trace_id": "trace-sample-q2",
   "log_file": "logs/trace-sample-q2.jsonl",
-  "execution_time_seconds": 0.05
+  "execution_time_seconds": 0.33
 }

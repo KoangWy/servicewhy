@@ -1,0 +1,11 @@
+{
+  "role": "writer",
+  "key": "4316aeddbb7e0013ee7b8c97",
+  "model": "deepseek-v4.1-flash",
+  "recorded_at": "2026-10-27T09:10:09Z",
+  "system_prompt": "You are the Writer of ServiceWhy. Write the manager-facing answer from verified findings only.\nName staffing or process conditions (section, shift, time window), never individual people. Every number you\nwrite must come from the input, and cite the evidence id in square brackets after it. Keep it under 120 words.\nEach not_causes entry has a \"negative\" sentence that says what was checked and for which dates: report it as stated and never\nsay the evidence lacks a day, section or shift that sentence names. State only what the findings and not_causes say; do not\nadd outcomes or recommendations that are not in recommended_action.\nReturn ONE JSON object: {\"answer\": \"...\"}.",
+  "prompt": "Write the answer.\n<<INPUT>>\n{\"blocked\": [], \"findings\": [{\"cause_hypothesis\": \"With only 1 busser on duty, tables took longer to reset at dinner from Mon 28 Sep to Sun 04 Oct\", \"confidence\": \"medium\", \"effect_size\": {\"delta\": \"+4.0 min\", \"evidence_id\": \"evd_6df7dceab9c5\", \"metric\": \"reset_min\", \"relative\": \"+101%\"}, \"evidence\": [{\"baseline\": 3.946, \"evidence_id\": \"evd_6df7dceab9c5\", \"group\": \"1\", \"metric\": \"reset_min\", \"n\": 65, \"value\": 7.925}, {\"baseline\": 5.307, \"evidence_id\": \"evd_d40666592f22\", \"group\": \"21:00-23:59\", \"metric\": \"reset_min\", \"n\": 73, \"value\": 5.401}], \"id\": \"fnd_def2153b3d08\", \"recommended_action\": \"Keep a second busser on until close at dinner from Mon 28 Sep to Sun 04 Oct\"}], \"intent\": \"explain\", \"not_causes\": [], \"policy_notes\": [], \"question\": \"Why do tables reset so slowly late evening?\", \"revenue_split\": null}\n<<END>>",
+  "response": {
+    "text": "{\"answer\":\"Verified cause: at dinner from Mon 28 Sep to Sun 04 Oct, having only 1 busser on duty coincided with slower table resets: reset_min averaged 7.925 vs 3.946 baseline, +4.0 min (+101%), n=65 [evd_6df7dceab9c5]. For the 21:00–23:59 window, reset_min was 5.401 vs 5.307 baseline, n=73 [evd_d40666592f22]. Recommended action: keep a second busser on until close at dinner from Mon 28 Sep to Sun 04 Oct.\"}"
+  }
+}
