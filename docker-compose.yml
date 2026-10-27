@@ -1,6 +1,6 @@
 # Default (no credentials): `docker compose up` -> api in SAMPLE mode on :8000, ui on :5173.
-# FULL mode: start the Zetaris bundle from its own compose (see README), set SAMPLE_MODE=false and keys in
-# .env, then `docker compose --profile full up -d` and `docker compose --profile full run --rm seed`.
+# FULL mode: start the Zetaris bundle from its own compose and Meterless Nightshift (see README), fill .env, then
+# `make full` (scripts/up-full.sh), which runs `docker compose --profile full up -d --build` and the seed job.
 services:
   api:
     build: { context: ., dockerfile: Dockerfile.api }
@@ -10,8 +10,16 @@ services:
         required: false
     environment:
       SAMPLE_MODE: ${SAMPLE_MODE:-true}
-      DATA_BACKEND: zetaris
+      DATA_BACKEND: ${DATA_BACKEND:-zetaris}
       MODEL_MODE: ${MODEL_MODE:-live}
+      MODEL_PROVIDER: ${MODEL_PROVIDER:-meterless}
+      METERLESS_RUNTIME_TOKEN: ${METERLESS_RUNTIME_TOKEN:-}
+      METERLESS_MODEL: ${METERLESS_MODEL:-meterless/auto}
+      METERLESS_APP: ${METERLESS_APP:-servicewhy}
+      # Meterless Nightshift runs on the host. Whether it listens on an interface a container can reach (not only
+      # 127.0.0.1) is UNVERIFIED. If the container cannot reach it, run the API on the host instead:
+      # `SAMPLE_MODE=false python run.py` (the UI can stay in Docker or run via `npm run dev`).
+      METERLESS_BASE_URL: ${METERLESS_BASE_URL_FROM_DOCKER:-http://host.docker.internal:8088/v1}
       LOGS_DIR: /app/logs-host
       # the Zetaris bundle publishes its ports on the host; reach it from inside this container
       ZETARIS_REST_URL: ${ZETARIS_REST_URL_FROM_DOCKER:-http://host.docker.internal:8888/api/v1.0}
