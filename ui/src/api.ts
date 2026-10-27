@@ -1,6 +1,13 @@
-import type { Finding, Health, Report, RunResponse, TraceEvent } from "./types";
+import type { ApiErrorBody, ConnectionTest, Finding, Health, ModelSettingsInput, Report, RunResponse, RunSummary, Settings, TraceEvent } from "./types";
 
 const BASE = "/api";
+
+/** A non-2xx answer that is not a structured error body; the status lets callers tell "no such endpoint" from a failure. */
+export class HttpError extends Error {
+  constructor(message: string, public status: number) {
+    super(message);
+  }
+}
 
 async function call<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(BASE + path, {
@@ -9,12 +16,16 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
   });
   const body = await res.json().catch(() => ({}));
   if (!res.ok && !(body && body.status === "error")) {
-    throw new Error(body?.detail || `${res.status} ${res.statusText}`);
+    throw new HttpError(body?.detail || `${res.status} ${res.statusText}`, res.status);
   }
   return body as T;
 }
 
 const post = <T,>(path: string, body: unknown = {}) => call<T>(path, { method: "POST", body: JSON.stringify(body) });
+
+const put = <T,>(path: string, body: unknown = {}) => call<T>(path, { method: "PUT", body: JSON.stringify(body) });
+
+export const isApiError = (body: unknown): body is ApiErrorBody => (body as ApiErrorBody | undefined)?.status === "error";
 
 export const api = {
   health: () => call<Health>("/health"),
@@ -26,5 +37,9 @@ export const api = {
   decide: (id: string, decision: "approve" | "reject") => post<Finding>(`/findings/${id}/${decision}`, { role: "manager" }),
   drilldown: (id: string, question?: string) =>
     post<{ parent_finding: string; run: RunResponse }>(`/findings/${id}/drilldown`, { question: question || null }),
+  runs: () => call<RunSummary[]>("/runs"),
+  settings: () => call<Settings>("/settings"),
+  saveModel: (input: ModelSettingsInput) => put<Settings | ApiErrorBody>("/settings/model", input),
+  testModel: (input: ModelSettingsInput) => post<ConnectionTest>("/settings/test", input),
   trace: (runId: string) => call<{ run_id: string; events: TraceEvent[] }>(`/traces/${runId}`),
 };
