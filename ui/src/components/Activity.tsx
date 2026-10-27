@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type RefObject } from "react";
+import { createPortal } from "react-dom";
 import { formatElapsed, liveElapsed, useActivity, useNow } from "../activity";
 import type { Activity, ActiveRun, ActivityEvent, RunKind, Stage } from "../types";
 import { Badge, btnSecondary, linkAction } from "./common";
@@ -163,17 +164,18 @@ export function ActivityControl() {
         aria-haspopup="dialog"
         onClick={() => (open ? close() : setOpen(true))}
         data-testid="activity-pill"
-        className="inline-flex min-h-10 items-center gap-2 rounded-control border border-line-strong bg-surface px-3 text-sm font-medium text-ink transition-colors duration-150 hover:bg-surface-2"
+        className="inline-flex min-h-10 max-w-full items-center gap-2 rounded-control border border-line-strong bg-surface px-3 text-sm font-medium text-ink transition-colors duration-150 hover:bg-surface-2"
       >
         <span className="sr-only">Activity: </span>
         {summary ? <Spinner className="size-3.5 text-accent-ink" /> : <span aria-hidden="true" className="size-2 rounded-full bg-faint" />}
-        <span aria-live="polite">
+        <span aria-live="polite" className="min-w-0 truncate">
           {summary ? summary.stage : "Idle"}
           {summary && summary.count > 1 ? <span className="font-normal text-muted"> ({summary.count} running)</span> : null}
         </span>
         {summary ? <span className="font-normal tabular-nums text-muted" data-testid="pill-elapsed">{formatElapsed(liveElapsed(summary.elapsed, receivedAt, now))}</span> : null}
       </button>
-      {open ? <ActivityPanel data={data} receivedAt={receivedAt} now={now} anchor={pill} onClose={close} /> : null}
+      {/* In the body, not in the sidebar: a fixed panel inside the sidebar's scroller made focus() scroll the sidebar sideways. */}
+      {open ? createPortal(<ActivityPanel data={data} receivedAt={receivedAt} now={now} anchor={pill} onClose={close} />, document.body) : null}
     </>
   );
 }
@@ -197,7 +199,7 @@ function ActivityPanel({ data, receivedAt, now, anchor, onClose }: { data: Activ
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
   useEffect(() => {
-    panel.current?.focus();
+    panel.current?.focus({ preventScroll: true });
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && closeRef.current();
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);

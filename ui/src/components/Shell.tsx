@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import type { Health } from "../types";
+import { useActivity } from "../activity";
 import { ActivityControl } from "./Activity";
 import { Badge } from "./common";
 
@@ -27,6 +28,7 @@ function ModeBadge({ health, failed }: { health: Health | null; failed: boolean 
 
 export function Shell({ screen, health, healthFailed, children }: { screen: string; health: Health | null; healthFailed: boolean; children: ReactNode }) {
   const [open, setOpen] = useState(false);
+  const pill = useActivity().status === "on";
   const active = activeItem(screen);
   useEffect(() => setOpen(false), [screen]);
   useEffect(() => {
@@ -39,26 +41,27 @@ export function Shell({ screen, health, healthFailed, children }: { screen: stri
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col md:flex-row">
       <aside className="sticky top-0 z-10 border-b border-line bg-bg md:h-dvh md:max-h-dvh md:w-60 md:shrink-0 md:overflow-y-auto md:border-b-0 md:border-r">
-        <div className="flex items-center justify-between gap-3 px-4 py-3 md:block md:px-5 md:py-8">
-          <div>
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 py-3 md:block md:px-5 md:py-8">
+          <div className="order-1 md:order-none">
             <h1 className="text-xl font-semibold tracking-tight text-ink">
               <a href="#/" className="rounded-sm">ServiceWhy</a>
             </h1>
             <p className="mt-1 hidden text-sm text-muted md:block">Explains why service or revenue changed; a verifier blocks what the data does not support.</p>
           </div>
-          <div className="flex items-center gap-2 md:mt-4">
+          {/* With the activity pill the badges take their own row on a phone; without it everything stays on one row. */}
+          <div className={`flex min-w-0 flex-wrap items-center gap-2 md:order-none md:mt-4 md:w-auto ${pill ? "order-3 w-full" : "order-2"}`}>
             <ModeBadge health={health} failed={healthFailed} />
             <ActivityControl />
-            <button
-              type="button"
-              aria-expanded={open}
-              aria-controls="main-nav"
-              onClick={() => setOpen(!open)}
-              className="inline-flex min-h-10 items-center rounded-control border border-line-strong bg-surface px-3 text-sm font-medium text-ink hover:bg-surface-2 md:hidden"
-            >
-              {open ? "Close menu" : "Menu"}
-            </button>
           </div>
+          <button
+            type="button"
+            aria-expanded={open}
+            aria-controls="main-nav"
+            onClick={() => setOpen(!open)}
+            className={`inline-flex min-h-10 items-center rounded-control border border-line-strong bg-surface px-3 text-sm font-medium text-ink hover:bg-surface-2 md:hidden ${pill ? "order-2" : "order-3"}`}
+          >
+            {open ? "Close menu" : "Menu"}
+          </button>
         </div>
         <nav id="main-nav" aria-label="Main" className={`${open ? "block" : "hidden"} px-3 pb-3 md:block md:px-3 md:pb-6`}>
           <ul className="flex flex-col gap-1">
