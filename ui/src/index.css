@@ -1,0 +1,131 @@
+@import "tailwindcss";
+
+/* Design tokens. Colours are CSS variables so the light and dark palettes share one set of utility names
+   (bg-surface, text-muted, border-line, ...). Semantic families (ok, warn, bad, neutral) are reserved for
+   meaning: confidence, verdict, approval status and the replay notice. */
+:root {
+  color-scheme: light dark;
+  --bg: #fafaf9;
+  --surface: #ffffff;
+  --surface-2: #f4f4f5;
+  --line: #e4e4e7;
+  --line-strong: #d4d4d8;
+  --ink: #18181b;
+  --muted: #52525b;
+  --faint: #6b6b73;
+  --accent: #2563eb;
+  --accent-fg: #ffffff;
+  --accent-soft: #eff6ff;
+  --accent-ink: #1d4ed8;
+  --ok-fg: #166534;
+  --ok-bg: #f0fdf4;
+  --ok-line: #bbf7d0;
+  --warn-fg: #92400e;
+  --warn-bg: #fffbeb;
+  --warn-line: #fde68a;
+  --bad-fg: #991b1b;
+  --bad-bg: #fef2f2;
+  --bad-line: #fecaca;
+  --neutral-fg: #3f3f46;
+  --neutral-bg: #f4f4f5;
+  --neutral-line: #d4d4d8;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0c0c0e;
+    --surface: #151518;
+    --surface-2: #1c1c20;
+    --line: #2a2a2f;
+    --line-strong: #3a3a41;
+    --ink: #f4f4f5;
+    --muted: #a1a1aa;
+    --faint: #8b8b94;
+    --accent-soft: #172554;
+    --accent-ink: #93c5fd;
+    --ok-fg: #86efac;
+    --ok-bg: #0f2a1a;
+    --ok-line: #1c4a2e;
+    --warn-fg: #fcd34d;
+    --warn-bg: #2b2008;
+    --warn-line: #54400f;
+    --bad-fg: #fca5a5;
+    --bad-bg: #2f1114;
+    --bad-line: #5c1f25;
+    --neutral-fg: #d4d4d8;
+    --neutral-bg: #222226;
+    --neutral-line: #3a3a41;
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-accent: var(--accent);
+  --color-accent-fg: var(--accent-fg);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-ink: var(--accent-ink);
+  --color-ok-fg: var(--ok-fg);
+  --color-ok-bg: var(--ok-bg);
+  --color-ok-line: var(--ok-line);
+  --color-warn-fg: var(--warn-fg);
+  --color-warn-bg: var(--warn-bg);
+  --color-warn-line: var(--warn-line);
+  --color-bad-fg: var(--bad-fg);
+  --color-bad-bg: var(--bad-bg);
+  --color-bad-line: var(--bad-line);
+  --color-neutral-fg: var(--neutral-fg);
+  --color-neutral-bg: var(--neutral-bg);
+  --color-neutral-line: var(--neutral-line);
+}
+
+@theme {
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  --radius-control: 0.5rem;
+  --radius-card: 0.75rem;
+  --spacing: 0.25rem;
+}
+
+@layer base {
+  html {
+    background: var(--bg);
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-size: 0.9375rem;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  :where(a, button, input, summary, select, textarea, [tabindex]):focus-visible {
+    outline: 2px solid var(--accent-ink);
+    outline-offset: 2px;
+  }
+  button:not(:disabled) {
+    cursor: pointer;
+  }
+  ::selection {
+    background: var(--accent-soft);
+    color: var(--accent-ink);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
