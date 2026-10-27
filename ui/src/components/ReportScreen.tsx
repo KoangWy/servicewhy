@@ -1,6 +1,8 @@
-import { useEffect, useState } from "react";
-import { api } from "../api";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useActivity, useActivityBoost } from "../activity";
+import { api, isApiError } from "../api";
 import type { Health, Report } from "../types";
+import { WaitingProgress } from "./Activity";
 import { btnPrimary, fmt, FindingCard, Outcomes, panel, SplitBar, Summary } from "./common";
 import { VerifierNote } from "./VerifierNote";
 
@@ -62,21 +64,75 @@ function Provenance({ report, replay }: { report: Report; replay: boolean }) {
   );
 }
 
+const REPORT_POLL_MS = 3000;
+
 export function ReportScreen({ health }: { health: Health | null }) {
   const [report, setReport] = useState<Report | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // null until GET /reports answered; true when it answered with no report yet.
+  const [empty, setEmpty] = useState<boolean | null>(null);
+  const [pressedAt, setPressedAt] = useState<number | null>(null);
+  const [conflictAt, setConflictAt] = useState<number | null>(null);
+  const pressed = useRef(false);
+  const { data, receivedAt } = useActivity();
+
+  const load = useCallback(async (): Promise<boolean> => {
+    const list = await api.listReports();
+    if (!list.length) return false;
+    setReport(await api.report(list[list.length - 1].report_id));
+    setEmpty(false);
+    return true;
+  }, []);
+
+  // Reading only: a report is never created from an effect, so StrictMode or a reload cannot start a second generation.
+  useEffect(() => {
+    load().then((found) => !found && setEmpty(true)).catch((e) => setError(String(e)));
+  }, [load]);
+
+  // The API says a generation is running (this tab, another tab, before a reload).
+  const reportRuns = data?.active.filter((r) => r.kind === "report") ?? [];
+  const job = data?.report_job ?? null;
+  const generating = !report && empty === true && (pressedAt != null || !!job || reportRuns.length > 0);
+  useActivityBoost(generating);
 
   useEffect(() => {
-    (async () => {
-      try {
-        const list = await api.listReports();
-        const id = list.length ? list[list.length - 1].report_id : (await api.createReport()).report_id;
-        setReport(await api.report(id));
-      } catch (e) {
-        setError(String(e));
+    if (!generating) return;
+    const id = setInterval(() => load().catch(() => {}), REPORT_POLL_MS);
+    return () => clearInterval(id);
+  }, [generating, load]);
+
+  // After a 409 the generation belongs to someone else. Once a poll newer than the 409 shows no job any more, stop waiting
+  // for it (a last look at /reports first); without /activity the 409 keeps the progress state, which still polls /reports.
+  useEffect(() => {
+    if (conflictAt == null || !data || receivedAt <= conflictAt || job || reportRuns.length) return;
+    load().then((found) => {
+      if (found) return;
+      setConflictAt(null);
+      setPressedAt(null);
+    }).catch(() => {});
+  }, [conflictAt, data, receivedAt, job, reportRuns.length, load]);
+
+  const generate = async () => {
+    if (pressed.current) return;
+    pressed.current = true;
+    setPressedAt(Date.now());
+    setError(null);
+    try {
+      const body = await api.createReport();
+      if (isApiError(body)) {
+        // 409 ReportInProgress means someone else started it: wait for it like our own.
+        if (body.error.type !== "ReportInProgress") throw new Error(`${body.error.type}: ${body.error.message}`);
+        pressed.current = false;
+        setConflictAt(Date.now());
+        return;
       }
-    })();
-  }, []);
+      if (!(await load())) throw new Error("The report was created but could not be found.");
+    } catch (e) {
+      setError(String(e));
+      setPressedAt(null);
+      pressed.current = false;
+    }
+  };
 
   const rs = report?.revenue_split;
   const byLevel = (l: string) => report?.findings.filter((f) => f.confidence === l).length ?? 0;
@@ -101,7 +157,24 @@ export function ReportScreen({ health }: { health: Health | null }) {
           ) : null}
         </div>
         {error ? <div role="alert" className="rounded-card border border-bad-line bg-bad-bg p-4 text-sm text-bad-fg">{error}</div> : null}
-        {!report && !error ? <p role="status" className="text-sm text-muted">Generating the report (a batch run of the same agent)…</p> : null}
+        {!report && empty === null && !error ? <p role="status" className="text-sm text-muted">Loading the report…</p> : null}
+        {!report && empty && !generating ? (
+          <div className={panel}>
+            <p className="font-medium text-ink">No weekly report yet</p>
+            <p className="mt-1 text-sm text-muted">Generating one runs the same agent in a batch over the week's data. It takes several minutes.</p>
+            <button type="button" onClick={generate} className={`${btnPrimary} mt-4`}>Generate weekly report</button>
+          </div>
+        ) : null}
+        {generating ? (
+          <WaitingProgress
+            label="Generating the weekly report…"
+            startedAt={job ? receivedAt - job.elapsed_s * 1000 : pressedAt ?? Date.now()}
+            receivedAt={receivedAt}
+            runs={reportRuns}
+            showQuestion
+            note="This takes several minutes. You can leave this page; the report appears here when it is ready."
+          />
+        ) : null}
         {report ? (
           <>
             <dl className="grid grid-cols-2 gap-3 lg:grid-cols-4">
