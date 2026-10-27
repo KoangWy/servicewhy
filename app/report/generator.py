@@ -36,7 +36,8 @@ def generate(orchestrator, period: dict[str, str], *, report_id: str | None = No
         slots = {"start": period["start"], "end": period["end"], "compare_previous": True}
         override = {**plan, "slots": slots, "missing_data": None, "reason": "period report batch",
                     "policy_notes": ["Report batch run: hypotheses fixed by the report template."]}
-        runs.append(orchestrator.run(question, run_id=f"{report_id}-{len(runs) + 1}", plan_override=override))
+        runs.append(orchestrator.run(question, run_id=f"{report_id}-{len(runs) + 1}", plan_override=override,
+                                  kind="report"))
     ok = [r for r in runs if r["status"] == "success"]
     order = {"high": 0, "medium": 1, "low": 2}
     findings = sorted((dict(f, run_id=r["run_id"]) for r in ok for f in r["output"]["findings"]),

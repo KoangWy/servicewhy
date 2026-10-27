@@ -14,7 +14,7 @@ class RunOptions(BaseModel):
 
 
 class RunRequest(BaseModel):
-    run_id: str | None = Field(None, pattern=r"^[A-Za-z0-9_.-]{1,64}$")
+    run_id: str | None = Field(None, max_length=200)  # shape is checked in the route: a file name is built from it
     input: RunInput
     options: RunOptions = RunOptions()
 

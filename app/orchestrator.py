@@ -13,6 +13,7 @@ import uuid
 from pathlib import Path
 from typing import Any, Callable
 
+from app.activity import ActivityTracker
 from app.adapters.model import CassetteMiss, ModelAdapter, ModelBudgetExceeded, ModelProviderError
 from app.model_config import ModelNotConfigured
 from app.agent.investigator import Investigator
@@ -36,37 +37,44 @@ def new_run_id() -> str:
 
 class Orchestrator:
     def __init__(self, settings: Settings, data_factory: Callable[[], Any],
-                 model_factory: Callable[[str], ModelAdapter] | None = None):
+                 model_factory: Callable[[str], ModelAdapter] | None = None, activity: ActivityTracker | None = None):
         self.settings, self.data_factory = settings, data_factory
+        self.activity = activity or ActivityTracker()
         self.model_factory = model_factory or (lambda session: ModelAdapter(
             settings.model_mode, session_id=session, cassette_dir=settings.cassette_dir,
             max_calls=int(os.environ.get("MODEL_MAX_CALLS", "40"))))
         self.library = load_library()
 
     def run(self, question: str, *, run_id: str | None = None, plan_override: dict | None = None,
-            parent_finding: str | None = None, context: str | None = None) -> dict[str, Any]:
+            parent_finding: str | None = None, context: str | None = None, kind: str = "ask") -> dict[str, Any]:
         run_id = run_id or new_run_id()
         t0 = time.time()
-        trace = Trace(run_id, self.settings.logs_dir)
+        self.activity.start(run_id, kind, question)  # kind: "ask" | "report" | "drilldown"; shown by GET /activity
+        outcome = "error"
         try:
-            out = self._run(question, run_id, trace, plan_override, parent_finding, context)
-            status = "success"
-        except Exception as e:  # structured error, never a silent crash (Technical Execution Guide §2)
-            kind = type(e).__name__
-            recoverable = isinstance(e, (CassetteMiss, ModelBudgetExceeded, TimeoutError, ConnectionError, ModelProviderError,
-                                         ModelNotConfigured))
-            trace.emit("run_end", "Orchestrator", "error", output_summary=f"{kind}: {e}", status="error",
-                       data={"traceback": traceback.format_exc()[-2000:],
-                             "model_calls": getattr(trace, "model_call_log", [])})
-            return {"run_id": run_id, "status": "error", "question": question,
-                    "error": {"type": kind, "message": str(e)[:500], "recoverable": recoverable},
-                    "trace_id": f"trace-{run_id}", "log_file": _rel(trace.path),
-                    "execution_time_seconds": round(time.time() - t0, 2)}
-        elapsed = round(time.time() - t0, 2)
-        trace.emit("run_end", "Orchestrator", "complete", output_summary=f"{status} in {elapsed}s",
-                   data={"execution_time_seconds": elapsed, "model_calls": getattr(trace, "model_call_log", [])})
-        return {"run_id": run_id, "status": status, "question": question, "output": out, "agents": AGENTS,
-                "trace_id": f"trace-{run_id}", "log_file": _rel(trace.path), "execution_time_seconds": elapsed}
+            trace = Trace(run_id, self.settings.logs_dir, on_event=lambda rec: self.activity.on_event(run_id, rec))
+            try:
+                out = self._run(question, run_id, trace, plan_override, parent_finding, context)
+                status = "success"
+            except Exception as e:  # structured error, never a silent crash (Technical Execution Guide §2)
+                err = type(e).__name__
+                recoverable = isinstance(e, (CassetteMiss, ModelBudgetExceeded, TimeoutError, ConnectionError,
+                                             ModelProviderError, ModelNotConfigured))
+                trace.emit("run_end", "Orchestrator", "error", output_summary=f"{err}: {e}", status="error",
+                           data={"traceback": traceback.format_exc()[-2000:],
+                                 "model_calls": getattr(trace, "model_call_log", [])})
+                return {"run_id": run_id, "status": "error", "question": question,
+                        "error": {"type": err, "message": str(e)[:500], "recoverable": recoverable},
+                        "trace_id": f"trace-{run_id}", "log_file": _rel(trace.path),
+                        "execution_time_seconds": round(time.time() - t0, 2)}
+            elapsed = round(time.time() - t0, 2)
+            trace.emit("run_end", "Orchestrator", "complete", output_summary=f"{status} in {elapsed}s",
+                       data={"execution_time_seconds": elapsed, "model_calls": getattr(trace, "model_call_log", [])})
+            outcome = "success"
+            return {"run_id": run_id, "status": status, "question": question, "output": out, "agents": AGENTS,
+                    "trace_id": f"trace-{run_id}", "log_file": _rel(trace.path), "execution_time_seconds": elapsed}
+        finally:
+            self.activity.finish(run_id, outcome)
 
     def _run(self, question: str, run_id: str, trace: Trace, plan_override: dict | None,
              parent_finding: str | None, context: str | None) -> dict[str, Any]:
@@ -74,6 +82,7 @@ class Orchestrator:
         session = str(uuid.uuid5(uuid.NAMESPACE_URL, run_id))  # x-opencode-session: one per investigation
         model = self.model_factory(session)
         trace.model_call_log = model.call_log  # read by run_end, including after a failed run
+        self.activity.attach_model(run_id, model.call_log)
         data = self.data_factory()
         wm_path = s.logs_dir / f"worldmodel-{run_id}.jsonl"
         store = WorldStoreService(wm_path, on_mutation=lambda rec: trace.emit(

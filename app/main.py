@@ -8,6 +8,8 @@ from typing import Any, Callable
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.activity import ActivityTracker
+from app.api.activity import router as activity_router
 from app.api.routes import router
 from app.api.settings import router as settings_router
 from app.config import Settings, load_dotenv
@@ -25,6 +27,7 @@ class Services:
     sample: SampleStore
     data: Callable[[], Any]
     orchestrator: Any
+    activity: ActivityTracker
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -47,10 +50,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         from app import runtime
         data, orch = (lambda: runtime.data_adapter(settings)), runtime.orchestrator(settings)
         registry = Registry(settings.logs_dir)
-    app.state.svc = Services(settings=settings, registry=registry, sample=sample, data=data, orchestrator=orch)
+    activity = ActivityTracker()
+    if orch is not None:
+        orch.activity = activity
+    app.state.svc = Services(settings=settings, registry=registry, sample=sample, data=data, orchestrator=orch,
+                             activity=activity)
     # An endpoint that accepts a token must not be callable cross-site; the UI reaches the API same-origin via /api
     origins = [o.strip() for o in os.environ.get("CORS_ORIGINS", DEFAULT_CORS_ORIGINS).split(",") if o.strip()]
     app.add_middleware(CORSMiddleware, allow_origins=origins, allow_methods=["*"], allow_headers=["*"])
     app.include_router(router)
+    app.include_router(activity_router)
     app.include_router(settings_router)
     return app
