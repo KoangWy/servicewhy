@@ -116,3 +116,54 @@ export interface ApiErrorBody {
   status: "error";
   error: { type: string; message: string; recoverable?: boolean; available_questions?: string[] };
 }
+
+export interface RunSummary {
+  run_id: string;
+  question: string | null;
+  status: "success" | "error";
+}
+
+/** Settings API: read-only mode, the model connection (never the token itself) and the provider catalogue. */
+export interface ModelSettings {
+  provider: "meterless" | "opencode";
+  base_url: string;
+  model_id: string;
+  token_set: boolean;
+  source: "env" | "runtime";
+}
+
+export interface ProviderInfo {
+  id: "meterless" | "opencode";
+  label: string;
+  primary: boolean;
+  default_base_url: string;
+  default_model_id: string;
+}
+
+export interface Settings {
+  mode: { sample_mode: boolean; data_backend: "zetaris" | "local"; model_mode: string };
+  model: ModelSettings;
+  providers: ProviderInfo[];
+}
+
+/** Body of PUT /settings/model and POST /settings/test; every field but the provider is optional. */
+export interface ModelSettingsInput {
+  provider: string;
+  base_url?: string;
+  model_id?: string;
+  token?: string;
+}
+
+export type ConnectionErrorType =
+  | "Unreachable" | "Unauthorized" | "NoModels" | "ModelUnavailable" | "ChatFailed" | "Timeout" | "NotConfigured" | "SampleMode";
+
+export interface ConnectionTest {
+  ok: boolean;
+  provider: string;
+  base_url: string;
+  latency_ms: number;
+  models: string[];
+  selected_model: string;
+  selected_model_available: boolean;
+  error: { type: ConnectionErrorType | string; message: string; hint?: string } | null;
+}
