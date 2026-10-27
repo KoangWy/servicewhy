@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import type { Health } from "../types";
+import { ActivityControl } from "./Activity";
 import { Badge } from "./common";
 
 type NavId = "dashboard" | "ask" | "runs" | "settings";
@@ -47,6 +48,7 @@ export function Shell({ screen, health, healthFailed, children }: { screen: stri
           </div>
           <div className="flex items-center gap-2 md:mt-4">
             <ModeBadge health={health} failed={healthFailed} />
+            <ActivityControl />
             <button
               type="button"
               aria-expanded={open}

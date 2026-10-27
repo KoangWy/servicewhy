@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { ActivityProvider } from "./activity";
 import { api } from "./api";
 import { AskScreen } from "./components/AskScreen";
 import { FindingScreen } from "./components/FindingScreen";
@@ -41,19 +42,21 @@ export default function App() {
     : healthFailed ? "mode unknown: the API did not answer /health" : "checking mode…";
   const [, screen, arg] = path.split("/");
   return (
-    <div className="min-h-dvh">
-      <SyntheticBanner mode={mode} replay={!!health?.sample_mode} />
-      <Shell screen={screen ?? ""} health={health} healthFailed={healthFailed}>
-        <main>
-          {screen === "finding" && arg ? <FindingScreen id={arg} health={health} /> :
-           screen === "trace" && arg ? <TraceScreen runId={arg} health={health} /> :
-           screen === "ask" ? <AskScreen health={health} /> :
-           screen === "runs" ? <RunsScreen /> :
-           screen === "settings" ? <SettingsScreen /> :
-           <ReportScreen health={health} />}
-        </main>
-        <PoweredBy health={health} failed={healthFailed} />
-      </Shell>
-    </div>
+    <ActivityProvider enabled={!!health && !health.sample_mode}>
+      <div className="min-h-dvh">
+        <SyntheticBanner mode={mode} replay={!!health?.sample_mode} />
+        <Shell screen={screen ?? ""} health={health} healthFailed={healthFailed}>
+          <main>
+            {screen === "finding" && arg ? <FindingScreen id={arg} health={health} /> :
+             screen === "trace" && arg ? <TraceScreen runId={arg} health={health} /> :
+             screen === "ask" ? <AskScreen health={health} /> :
+             screen === "runs" ? <RunsScreen /> :
+             screen === "settings" ? <SettingsScreen /> :
+             <ReportScreen health={health} />}
+          </main>
+          <PoweredBy health={health} failed={healthFailed} />
+        </Shell>
+      </div>
+    </ActivityProvider>
   );
 }
