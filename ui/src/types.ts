@@ -115,6 +115,8 @@ export interface Health {
 export interface ApiErrorBody {
   status: "error";
   error: { type: string; message: string; recoverable?: boolean; available_questions?: string[] };
+  /** Only on 409 ReportInProgress: the generation that is already running. */
+  report_job?: { started_at: string; elapsed_s: number } | null;
 }
 
 export interface RunSummary {
@@ -168,4 +170,50 @@ export interface ConnectionTest {
   routed_model?: string | null;
   note?: string | null;
   error: { type: ConnectionErrorType | string; message: string; hint?: string } | null;
+}
+
+/** GET /activity: what the API is doing right now. Everything is in-memory on the server and bounded. */
+export type RunKind = "ask" | "report" | "drilldown";
+export type Stage = "Planner" | "Investigator" | "Verifier" | "Writer";
+
+export interface ActivityEvent {
+  event: string;
+  agent: string;
+  action: string;
+  summary: string;
+  status: string;
+  at: string;
+}
+
+export interface ActiveRun {
+  run_id: string;
+  kind: RunKind;
+  question: string;
+  started_at: string;
+  elapsed_s: number;
+  stage: Stage | null;
+  counts: { events: number; queries: number; model_calls: number; blocks: number; retries: number };
+  model: string | null;
+  recent_events: ActivityEvent[];
+}
+
+export interface FinishedRun {
+  run_id: string;
+  kind: string;
+  question: string;
+  status: "success" | "error";
+  elapsed_s: number;
+  finished_at: string;
+}
+
+export interface ReportJob {
+  started_at: string;
+  elapsed_s: number;
+}
+
+export interface Activity {
+  now: string;
+  active: ActiveRun[];
+  recent: FinishedRun[];
+  report_job: ReportJob | null;
 }
