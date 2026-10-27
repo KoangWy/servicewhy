@@ -30,6 +30,8 @@ export interface Finding {
 }
 
 export interface RevenueSplit {
+  revenue_focus?: number | null;
+  revenue_baseline?: number | null;
   change_rel: number | null;
   volume_share: number | null;
   decoy_dominant: boolean;
@@ -39,7 +41,7 @@ export interface RevenueSplit {
 export interface NotCause {
   statement: string;
   negative?: string;
-  evidence: { evidence_id: string; value: number | null; baseline: number | null; n: number }[];
+  evidence: { evidence_id: string; value: number | null; baseline: number | null; n: number; unit?: string }[];
 }
 
 export interface Insufficient {
@@ -76,7 +78,15 @@ export interface Report {
   revenue_split: RevenueSplit | null;
   not_causes: NotCause[];
   insufficient: Insufficient[];
-  provenance: { data: string; channel: string; model: string; runs: { run_id: string; question: string }[] };
+  provenance: {
+    data: string;
+    channel: string;
+    model: string;
+    data_as_of?: string;
+    stores?: Record<string, string[]>;
+    comparison?: string;
+    runs: { run_id: string; question: string }[];
+  };
 }
 
 export interface TraceEvent {
@@ -99,4 +109,10 @@ export interface Health {
   model: string;
   sample_mode: boolean;
   sample_questions: string[] | null;
+}
+
+/** Body of a structured API error (HTTP 4xx/5xx with status "error"); api.ts passes it through instead of throwing. */
+export interface ApiErrorBody {
+  status: "error";
+  error: { type: string; message: string; recoverable?: boolean; available_questions?: string[] };
 }
