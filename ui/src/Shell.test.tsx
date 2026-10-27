@@ -283,3 +283,17 @@ test("Settings reports other load failures and can retry", async () => {
   fireEvent.click(screen.getByRole("button", { name: "Try again" }));
   expect(await screen.findByRole("button", { name: "Save" })).toBeTruthy();
 });
+
+test("the header carries the ServiceWhy wordmark and tagline, and the footer credits Team Irigo", async () => {
+  render(<App />);
+  const brand = screen.getByRole("link", { name: "ServiceWhy, home" });
+  expect(brand.getAttribute("href")).toBe("#/");
+  expect(brand.textContent).toBe("ServiceWhy");           // two-tone wordmark, one readable name
+  expect(brand.querySelector("svg")?.getAttribute("aria-hidden")).toBe("true");
+  expect(screen.getByText("No receipt, no claim.")).toBeTruthy();
+  const credit = await screen.findByTestId("team-credit");
+  expect(credit.textContent).toMatch(/ServiceWhy was built by Team Irigo/);
+  expect(credit.textContent).toMatch(/Lê Quang Minh Khoa and Nguyễn Quang Huy/);
+  expect(credit.textContent).toMatch(/Open Agent Hackathon 2026/);
+  expect(screen.getByText("Powered by Zetaris")).toBeTruthy();   // the sponsors stay credited
+});

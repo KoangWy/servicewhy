@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import type { Health } from "../types";
 import { useActivity } from "../activity";
 import { ActivityControl } from "./Activity";
+import { Wordmark } from "./Brand";
 import { Badge } from "./common";
 
 type NavId = "dashboard" | "ask" | "runs" | "settings";
@@ -43,9 +44,10 @@ export function Shell({ screen, health, healthFailed, children }: { screen: stri
       <aside className="sticky top-0 z-10 border-b border-line bg-bg md:h-dvh md:max-h-dvh md:w-60 md:shrink-0 md:overflow-y-auto md:border-b-0 md:border-r">
         <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 py-3 md:block md:px-5 md:py-8">
           <div className="order-1 md:order-none">
-            <h1 className="text-xl font-semibold tracking-tight text-ink">
-              <a href="#/" className="rounded-sm">ServiceWhy</a>
+            <h1>
+              <a href="#/" className="inline-block rounded-sm" aria-label="ServiceWhy, home"><Wordmark /></a>
             </h1>
+            <p className="mt-2 hidden text-[11px] font-semibold uppercase tracking-[0.14em] text-faint md:block">No receipt, no claim.</p>
             <p className="mt-1 hidden text-sm text-muted md:block">Explains why service or revenue changed; a verifier blocks what the data does not support.</p>
           </div>
           {/* With the activity pill the badges take their own row on a phone; without it everything stays on one row. */}

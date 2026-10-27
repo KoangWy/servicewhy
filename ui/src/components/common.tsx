@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Logo } from "./Brand";
 import type { Finding, Health, NotCause, Insufficient, RevenueSplit } from "../types";
 
 // Shared class strings, so every screen draws controls and surfaces the same way.
@@ -230,7 +231,7 @@ export function Outcomes({ notCauses, insufficient }: { notCauses: NotCause[]; i
   );
 }
 
-/** Footer provenance: names the two sponsor technologies and says, from /health, whether anything is live. */
+/** Footer: credits the team, names the two sponsor technologies and says, from /health, whether anything is live. */
 export function PoweredBy({ health, failed }: { health: Health | null; failed: boolean }) {
   let tone: Tone = "neutral";
   let status = "Checking the API…";
@@ -249,14 +250,24 @@ export function PoweredBy({ health, failed }: { health: Health | null; failed: b
   }
   return (
     <footer className="mt-16 border-t border-line py-8 text-sm text-muted" aria-label="Provenance">
-      <div className="grid gap-5 sm:grid-cols-2 sm:gap-8">
+      <div className="flex items-start gap-3" data-testid="team-credit">
+        <Logo className="mt-0.5 size-7" />
+        <div className="min-w-0">
+          <p className="text-ink">
+            <span className="font-semibold">ServiceWhy</span> was built by <span className="font-semibold">Team Irigo</span>:
+            {" "}Lê Quang Minh Khoa and Nguyễn Quang Huy.
+          </p>
+          <p className="mt-0.5">Open Agent Hackathon 2026 · Track 02, The Agent That Can Explain Why · All data is synthetic.</p>
+        </div>
+      </div>
+      <div className="mt-6 grid gap-5 sm:grid-cols-2 sm:gap-8">
         <div>
           <h2 className="font-semibold text-ink">Powered by Zetaris</h2>
           <p className="mt-1">Federated SQL over the two data stores (PostgreSQL and Parquet on MinIO). The investigator and the verifier both query through it.</p>
         </div>
         <div>
           <h2 className="font-semibold text-ink">Powered by Meterless</h2>
-          <p className="mt-1">World-model state with provenance, as an in-repo engine built on the Meterless reference architecture. Each state write is a traced event.</p>
+          <p className="mt-1">In FULL mode the model calls go through Meterless Nightshift. World-model state with provenance is an in-repo engine built on the Meterless reference architecture; each state write is a traced event.</p>
         </div>
       </div>
       <p className="mt-5 flex flex-wrap items-start gap-x-3 gap-y-2">
