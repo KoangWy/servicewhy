@@ -230,3 +230,14 @@ def test_cors_allows_only_the_configured_origins(settings, monkeypatch):
     c2 = TestClient(create_app(settings))
     assert c2.options("/settings", headers={"Origin": "https://b.example", "Access-Control-Request-Method": "GET"}
                       ).headers["access-control-allow-origin"] == "https://b.example"
+
+
+def test_settings_test_reports_the_routed_model_and_warns_about_on_device_routing(client):
+    on_device = "webllm/Llama-3.2-1B-Instruct-q4f16_1-MLC"
+    with nightshift(routed_model=on_device) as ns:
+        body = client.post("/settings/test", json={"base_url": ns.url, "token": TOKEN}).json()
+    assert body["ok"] is True and body["routed_model"] == on_device
+    assert "on-device" in body["note"] and "meterless/auto" in body["note"]
+    with nightshift(routed_model="nvidia/nemotron-x", models=("nvidia/nemotron-x",)) as ns:
+        body = client.post("/settings/test", json={"base_url": ns.url, "token": TOKEN, "model_id": "nvidia/nemotron-x"}).json()
+    assert body["routed_model"] == "nvidia/nemotron-x" and body["note"] is None

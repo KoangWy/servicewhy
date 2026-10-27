@@ -165,5 +165,7 @@ export interface ConnectionTest {
   models: string[];
   selected_model: string;
   selected_model_available: boolean;
+  routed_model?: string | null;
+  note?: string | null;
   error: { type: ConnectionErrorType | string; message: string; hint?: string } | null;
 }

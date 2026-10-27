@@ -226,6 +226,17 @@ test("Test connection shows each check, the latency and fills the model list, wi
   expect(calls("PUT /api/settings/model")).toHaveLength(0);
 });
 
+test("Test connection shows the model that answered and warns when it is an on-device model", async () => {
+  window.location.hash = "/settings";
+  useApi({ "POST /api/settings/test": { ...okTest, routed_model: "webllm/Llama-3.2-1B-Instruct-q4f16_1-MLC",
+    note: "meterless/auto was routed to the on-device model webllm/Llama-3.2-1B-Instruct-q4f16_1-MLC. Pick a cloud model." } });
+  render(<App />);
+  fireEvent.click(await screen.findByRole("button", { name: "Test connection" }));
+  const result = await screen.findByTestId("test-result");
+  expect(result.textContent).toMatch(/Answered by\s*webllm\/Llama-3\.2-1B/);
+  expect((await screen.findByTestId("test-note")).textContent).toMatch(/on-device model/);
+});
+
 test("Test connection failure shows the error type, message and hint, and marks later checks as not run", async () => {
   window.location.hash = "/settings";
   useApi({ "POST /api/settings/test": { ...okTest, ok: false, latency_ms: 0, models: [], selected_model_available: false,

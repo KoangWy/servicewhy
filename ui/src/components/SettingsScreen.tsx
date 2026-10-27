@@ -47,6 +47,12 @@ function TestResult({ result }: { result: ConnectionTest }) {
           </li>
         ))}
       </ul>
+      {result.routed_model ? (
+        <p className="mt-3 text-sm text-ink">
+          Answered by <span className="font-mono text-xs [overflow-wrap:anywhere]">{result.routed_model}</span>
+        </p>
+      ) : null}
+      {result.note ? <p className="mt-2 text-sm font-medium text-warn-fg" data-testid="test-note">{result.note}</p> : null}
       {err ? (
         <div className="mt-3 border-t border-bad-line pt-3 text-ink">
           <p><strong className="font-semibold text-bad-fg">{err.type}:</strong> {err.message}</p>

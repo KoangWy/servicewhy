@@ -80,10 +80,25 @@ def _scrub(text: str, token: str) -> str:
     return text.replace(token, "…redacted") if token else text
 
 
-def _result(cfg: ModelConfig, t0: float, models: list[str], available: bool, error: dict | None) -> dict[str, Any]:
-    return {"ok": error is None, "provider": cfg.provider, "base_url": model_config.safe_url(cfg.base_url),
-            "latency_ms": round((time.monotonic() - t0) * 1000), "models": models[:200], "selected_model": cfg.model_id,
-            "selected_model_available": available, "error": error}
+def _result(cfg: ModelConfig, t0: float, models: list[str], available: bool, error: dict | None,
+            routed: str | None = None) -> dict[str, Any]:
+    out = {"ok": error is None, "provider": cfg.provider, "base_url": model_config.safe_url(cfg.base_url),
+           "latency_ms": round((time.monotonic() - t0) * 1000), "models": models[:200], "selected_model": cfg.model_id,
+           "selected_model_available": available, "error": error, "routed_model": routed, "note": None}
+    if routed and routed.startswith("webllm/"):  # observed: meterless/auto picked the on-device model
+        out["note"] = (f"{cfg.model_id} was routed to the on-device model {routed}. A model this small cannot run the "
+                       "agent reliably: set the model id to a concrete cloud model from the list.")
+    return out
+
+
+def _routed_model(reply: Any) -> str | None:
+    """Nightshift reports the model that really answered in `meterless.routed_model` (else the OpenAI `model` field)."""
+    if not isinstance(reply, dict):
+        return None
+    ns = reply.get("meterless")
+    routed = ns.get("routed_model") if isinstance(ns, dict) else None
+    routed = routed or reply.get("model")
+    return routed if isinstance(routed, str) else None
 
 
 def _err(kind: str, message: str, hint: str = "") -> dict[str, str]:
@@ -132,9 +147,9 @@ def _run_test(cfg: ModelConfig, token_missing: bool) -> dict[str, Any]:
             return _result(cfg, t0, models, False, _err(
                 "ModelUnavailable", f"model {cfg.model_id!r} is not in the endpoint's model list",
                 "Pick one of the listed ids" + (" or use meterless/auto." if cfg.provider == "meterless" else ".")))
-        model_adapter.chat_completion(cfg, {"model": cfg.model_id, "temperature": 0, "max_tokens": 16,
-                                            "messages": [{"role": "user", "content": "Reply with the single word OK."}]},
-                                      timeout=TEST_TIMEOUT)
+        reply = model_adapter.chat_completion(
+            cfg, {"model": cfg.model_id, "temperature": 0, "max_tokens": 16,
+                  "messages": [{"role": "user", "content": "Reply with the single word OK."}]}, timeout=TEST_TIMEOUT)
     except model_adapter.ModelUnreachable as e:
         return _result(cfg, t0, models, False, _err("Unreachable", _scrub(str(e), cfg.token), unreachable_hint))
     except model_adapter.ModelProviderError as e:
@@ -147,7 +162,7 @@ def _run_test(cfg: ModelConfig, token_missing: bool) -> dict[str, Any]:
     except TimeoutError:
         return _result(cfg, t0, models, False, _err(
             "Timeout", f"no answer within {TEST_TIMEOUT:g}s", "The endpoint is slow or not answering; try again."))
-    return _result(cfg, t0, models, True, None)
+    return _result(cfg, t0, models, True, None, routed=_routed_model(reply))
 
 
 @router.post("/settings/test")

@@ -18,10 +18,11 @@ TOKEN = "nightshift-runtime-token-0123456789"
 
 class Stub:
     def __init__(self, *, models=("meta/llama-x",), token=TOKEN, reply="OK", delay=0.0, chat_status=200,
-                 reject_temperature=False):
+                 reject_temperature=False, routed_model=None):
         self.models = None if models is None else list(models)  # None: no /models endpoint
         self.token, self.reply, self.delay = token, reply, delay
         self.chat_status, self.reject_temperature = chat_status, reject_temperature
+        self.routed_model = routed_model  # real Nightshift reports the answering model in meterless.routed_model
         self.requests: list[dict] = []
         self.url = ""
 
@@ -53,8 +54,11 @@ class Stub:
                         return self._send(400, {"error": {"message": "Unsupported parameter: 'temperature'"}})
                     if stub.chat_status != 200:
                         return self._send(stub.chat_status, {"error": {"message": "no model connected"}})
-                    return self._send(200, {"model": payload["model"], "usage": {"total_tokens": 3},
-                                            "choices": [{"message": {"role": "assistant", "content": stub.reply}}]})
+                    body = {"model": payload["model"], "usage": {"total_tokens": 3},
+                            "choices": [{"message": {"role": "assistant", "content": stub.reply}}]}
+                    if stub.routed_model:
+                        body["meterless"] = {"routed_model": stub.routed_model}
+                    return self._send(200, body)
                 self._send(404, {"error": {"message": "not found"}})
 
             def do_GET(self):
