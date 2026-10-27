@@ -3,21 +3,30 @@
   "team": {
     "name": "Irigo",
     "leader": "Le Quang Minh Khoa",
-    "members": ["Le Quang Minh Khoa", "Nguyen Quang Huy"]
+    "members": [
+      "Le Quang Minh Khoa",
+      "Nguyen Quang Huy"
+    ]
   },
   "track": "02 - The Agent That Can Explain Why",
   "product": "ServiceWhy",
   "repo": "https://github.com/KoangWy/servicewhy",
   "model": {
-    "provider": "OpenCode Go (OpenAI-compatible endpoint)",
-    "base_url": "https://opencode.ai/zen/go/v1",
-    "model_id": "deepseek-v4.1-flash"
+    "provider": "Meterless Nightshift (primary; OpenAI-compatible Runtime, MODEL_PROVIDER=meterless)",
+    "base_url": "http://127.0.0.1:8088/v1 (local Nightshift Runtime)",
+    "model_id": "chosen by the user inside Nightshift (default routing id meterless/auto); first verified run: nvidia/nemotron-3-ultra-550b-a55b",
+    "secondary": {
+      "provider": "OpenCode Go (direct, MODEL_PROVIDER=opencode)",
+      "base_url": "https://opencode.ai/zen/go/v1",
+      "model_id": "deepseek-v4.1-flash",
+      "note": "the model behind the published scorecard"
+    }
   },
   "sponsor_tech": {
     "zetaris": "Federated SQL over POS tickets/items/table events (PostgreSQL) plus rosters/plate returns/reviews (second store); Investigator queries and Verifier re-queries both go through Zetaris",
-    "meterless": "World Model engine implemented in-repo from Meterless' reference architecture: WorldStoreService + IngestPipelineService + ContextBuilderService as shared hypothesis/evidence state with provenance; the Verifier reads the context builder; model calls do not go through Meterless",
+    "meterless": "Meterless Nightshift is the primary model provider (Runtime URL, token and model id are configurable in the Settings screen or .env). The World Model engine is implemented in-repo from Meterless' reference architecture: WorldStoreService + IngestPipelineService + ContextBuilderService as shared hypothesis/evidence state with provenance; the Verifier reads the context builder",
     "cursor": "Almost not used; development was done with Claude as the coding assistant; .cursor/rules committed; no sponsor credit was released; see README",
-    "nvidia": "not used"
+    "nvidia": "no NVIDIA SDK or key in the repository; Nemotron can be served through Nightshift (verified once locally); no award claim"
   },
   "pre_existing_components": [],
   "synthetic_data": true,

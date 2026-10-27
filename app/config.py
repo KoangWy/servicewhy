@@ -14,8 +14,9 @@ ROOT = Path(__file__).resolve().parent.parent
 
 
 def load_dotenv(path: Path = ROOT / ".env") -> None:
-    """Minimal .env reader: never overrides variables already set by the shell or compose."""
-    if not path.exists():
+    """Minimal .env reader: never overrides variables already set by the shell or compose.
+    `SERVICEWHY_NO_DOTENV=1` turns it off (the test suite sets it so a developer's .env cannot change test outcomes)."""
+    if os.environ.get("SERVICEWHY_NO_DOTENV") or not path.exists():
         return
     for line in path.read_text().splitlines():
         line = line.strip()
