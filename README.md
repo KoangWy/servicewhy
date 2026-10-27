@@ -7,7 +7,7 @@
   <img alt="Data layer: Zetaris" src="https://img.shields.io/badge/data_layer-Zetaris_federated_SQL-0d9488?style=flat-square">
   <img alt="Models: Meterless Nightshift" src="https://img.shields.io/badge/models-Meterless_Nightshift-7c3aed?style=flat-square">
   <img alt="Meterless engine: World Model" src="https://img.shields.io/badge/engine-World_Model-1d4ed8?style=flat-square">
-  <img alt="Tests" src="https://img.shields.io/badge/tests-145_pytest_%C2%B7_72_vitest-16a34a?style=flat-square">
+  <img alt="Tests" src="https://img.shields.io/badge/tests-146_pytest_%C2%B7_72_vitest-16a34a?style=flat-square">
   <img alt="Data: 100% synthetic" src="https://img.shields.io/badge/data-100%25_synthetic-f59e0b?style=flat-square">
   <a href="LICENSE"><img alt="MIT licence" src="https://img.shields.io/badge/licence-MIT-64748b?style=flat-square"></a>
 </p>
@@ -178,7 +178,7 @@ Causes are always **staffing or process conditions** (section, shift, time windo
 Thresholds live in `app/agent/verifier.py` (`THRESHOLDS`). Runs are bounded: at most 3 hypotheses, 2 retries each, 12 investigate+verify steps per run, 60 s per model call and 40 model calls per run.
 
 > [!WARNING]
-> **The thresholds are initial values, tuned in one pass on real runs before the feature freeze.** The same pass covers the verifier's model-judgment prompt (`SYSTEM` in `app/agent/verifier.py`) and the hypothesis library's claim and cause wording (`app/agent/hypotheses.yaml`). The freeze is the commit that publishes the scorecard below: from it on, the thresholds, those prompts and the simulator parameters do not change (UI-only changes may follow). The pass worked from recorded verifier prompts and evidence payloads plus synthetic negative controls, and simulator ground truth was never an input to it. The pass was also checked against the scorecard questions: three live scorecard runs took the baseline from 2/10 to 8/10. **The published 8/10 is therefore an in-sample number** (same seed, same ten questions), not a held-out test.
+> **The thresholds are initial values, tuned in one pass on real runs before the feature freeze (tuning pass and scorecard run: 2026-10-27 UTC).** The same pass covers the verifier's model-judgment prompt (`SYSTEM` in `app/agent/verifier.py`) and the hypothesis library's claim and cause wording (`app/agent/hypotheses.yaml`). The freeze is the commit that publishes the scorecard below (`29cdff1`, 2026-10-27 UTC): from it on, the thresholds, those prompts and the simulator parameters do not change (UI-only changes may follow). The pass worked from recorded verifier prompts and evidence payloads plus synthetic negative controls, and simulator ground truth was never an input to it. The pass was also checked against the scorecard questions: three live scorecard runs took the baseline from 2/10 to 8/10. **The published 8/10 is therefore an in-sample number** (same seed, same ten questions), not a held-out test.
 
 ## Sponsor technology
 
@@ -289,7 +289,7 @@ Keyless: no keys and no services needed.
 
 ```bash
 pip install -r requirements-dev.txt
-python -m pytest -q                 # 145 tests; local seeded store + offline fake model, no keys, no services
+python -m pytest -q                 # 146 tests; local seeded store + offline fake model, no keys, no services
 python scripts/e2e.py               # make e2e: demo question through POST /run on the local store, replaying the recorded model; asserts every role is in the trace
 cd ui && npm ci && npm test && npm run dev   # 72 UI tests; UI on :5173, proxies /api to :8000
 ```

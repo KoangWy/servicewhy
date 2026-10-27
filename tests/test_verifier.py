@@ -88,3 +88,36 @@ def test_hypothesis_library_is_data(tmp_path):
     path.write_text(yaml.safe_dump(entries), encoding="utf-8")
     plan = normalise({"intent": "explain", "hypotheses": ["H_NEW", "H_UNKNOWN"], "slots": {}}, load_library(path))
     assert plan["hypotheses"] == ["H_NEW"]
+
+
+class _FlatInvestigator:
+    """Re-query reproduces the reported value exactly, and neither side has a baseline group."""
+
+    def sql_for(self, spec, *, raw, independent):
+        return "SELECT 1"
+
+    def _query(self, sql, *, purpose, agent, retry):
+        return []
+
+    def compute(self, spec, rows, *, raw):
+        return {"value": 12.0, "baseline": None}
+
+
+class _RecordingTrace:
+    def __init__(self):
+        self.events = []
+
+    def emit(self, event, agent, action, **fields):
+        self.events.append((event, action, fields))
+
+
+def test_v3_causal_claim_without_a_baseline_group_is_blocked():
+    from app.agent.verifier import Verifier
+    trace = _RecordingTrace()
+    evidence = {"id": "evd_flat", "spec": {}, "value": 12.0, "baseline": None, "n": 40, "n_baseline": 0,
+                "descriptive": False, "supports": True}
+    verdict = Verifier(_FlatInvestigator(), None, None, trace).verify(
+        {"wm_id": "hyp_flat", "statement": "A cause with nothing to compare against"}, [evidence], retry=0)
+    assert verdict["blocked"] and verdict["reasons"] == ["V3: no contrast (baseline group missing) for a causal claim"]
+    blocks = [fields for event, _, fields in trace.events if event == "block"]
+    assert blocks and "V3" in blocks[0]["output_summary"]
