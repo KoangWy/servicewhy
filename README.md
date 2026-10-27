@@ -14,6 +14,7 @@
 
 <p align="center">
   <b>Open Agent Hackathon 2026 · Track 02 (The Agent That Can Explain Why) · Team Irigo</b><br>
+  <a href="https://youtu.be/1Qmu-7wi4Uk">Demo video</a> ·
   <a href="#run-it">Run it</a> ·
   <a href="#how-it-works">How it works</a> ·
   <a href="#sponsor-technology">Sponsor technology</a> ·
@@ -21,6 +22,10 @@
   <a href="#scorecard">Scorecard</a> ·
   <a href="#api">API</a> ·
   <a href="#data-and-limitations">Limitations</a>
+</p>
+
+<p align="center">
+  <a href="https://youtu.be/1Qmu-7wi4Uk"><b>▶ Watch the demo video (about 4 minutes)</b></a>: the problem, the four agents, a Verifier block and retry, a live run through Zetaris and Meterless Nightshift, and the scorecard. The narration is AI-generated text-to-speech.
 </p>
 
 > [!IMPORTANT]
