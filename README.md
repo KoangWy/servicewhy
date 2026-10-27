@@ -10,15 +10,19 @@ retries on a wider sample, or answers "insufficient evidence".
 > **All data is synthetic.** A seeded discrete-event simulator generates every guest, ticket, shift
 > and review. No real guest, staff or customer data is used anywhere, and every UI screen says so.
 
-## Run it in two minutes (no credentials)
+## Run it
+
+There are two ways to run ServiceWhy. **A** needs nothing. **B** is one command once its prerequisites exist.
+
+### A. SAMPLE: no keys, no services
 
 SAMPLE mode replays recorded runs through the same API and UI. It makes no network calls, needs no
 keys and starts no Zetaris, Postgres or MinIO. **It is a replay, not a live agent:** the API looks up the
 stored response for the normalised question text (`app/sample.py`), and every response says so
 (`mode.sample_mode`, `recorded_with`). The recordings come from a real FULL-mode run (Zetaris and a live
 model), and the traces show every plan, query, verdict, block and retry from that run. To see the agent
-execute, use FULL mode below, or `make e2e` (the real orchestrator on a local seeded store, with the
-recorded model responses replayed).
+execute, use path B, or `make e2e` (the real orchestrator on a local seeded store, with the
+recorded model responses replayed). SAMPLE ignores any model key or Nightshift setting; to use a key, follow path B.
 
 ```bash
 git clone https://github.com/KoangWy/servicewhy && cd servicewhy
@@ -40,25 +44,60 @@ SAMPLE_MODE=true python run.py ask "Why did Saturday dinner revenue drop 18%?"
 that were recorded. A question that was not recorded returns a structured `SampleModeMiss` error, not
 a guess.
 
-## Run it for real (FULL mode)
+### B. FULL on the synthetic (mock) data
 
-FULL mode needs the Zetaris local bundle, a model key and the two stores. Keys come only from your
-local `.env` (`cp .env.example .env`).
+FULL mode runs the real agent: Zetaris federated SQL over the seeded stores and a live model through
+Meterless Nightshift. The data is still the synthetic simulator output. Three prerequisites, then one command.
 
-1. **Zetaris bundle.** Download `zetaris-platform.zip` from Zetaris Cloud ("Run locally"), then run
+1. **Zetaris local bundle running.** Download `zetaris-platform.zip` from Zetaris Cloud ("Run locally"), then run
    `docker login zetarishackathon.azurecr.io`, `./preflight.sh` and `docker compose up -d` inside it.
    The bundle images are amd64. On Apple Silicon they run emulated, so budget several minutes for
    startup. ServiceWhy reaches the bundle through its published ports: 3000 for login, 8888 for REST.
-2. **Our stack:** set `SAMPLE_MODE=false` plus the keys in `.env`, then run:
-   ```bash
-   docker compose --profile full up -d --build        # api, ui, postgres, minio
-   docker compose --profile full run --rm seed        # simulator -> Postgres + Parquet on MinIO -> Zetaris registration
-   ```
-   The seed job is idempotent: re-running it re-seeds the stores, and the Zetaris registration becomes a no-op.
-3. Ask: `curl -X POST localhost:8000/run -H "Content-Type: application/json" -d '{"input":{"query":"Why did Saturday dinner revenue drop 18%?"}}'`.
-   The trace is written to `logs/trace-<run_id>.jsonl` and to stdout.
+2. **Meterless Nightshift installed and running.** Download it from meterless.ai and enter your email at the
+   access gate. In the Nightshift Console, copy the **Nightshift URL** and the **Runtime API key**. The model
+   provider key (for example NVIDIA) is entered in Nightshift's **Providers** tab and never in this repo's `.env`;
+   you choose any key and model inside Nightshift. Nightshift exposes an OpenAI-compatible Runtime (default
+   `http://127.0.0.1:8088/v1`).
+3. **Fill `.env`.** `cp .env.example .env`, then set `METERLESS_RUNTIME_TOKEN` (the Runtime API key) and the
+   Zetaris values (`ZETARIS_USER`, `ZETARIS_PASSWORD`, `ZETARIS_API_KEY`, `ZETARIS_ORG_ID`). Change
+   `METERLESS_BASE_URL` only if the Console shows a different Nightshift URL.
 
-From a Python checkout, `make seed`, `make e2e-full` and `python run.py` do the same steps.
+Then:
+
+```bash
+make full        # runs scripts/up-full.sh
+```
+
+`make full` checks, in order, that `.env` is filled in, Docker is running, Zetaris answers and Nightshift answers with
+at least one model (each failure prints what is wrong and the exact fix). It then runs
+`docker compose --profile full up -d --build`, waits for `http://localhost:8000/health` (up to 180 s) and runs the
+idempotent seed job (`docker compose --profile full run --rm seed`: simulator -> Postgres + Parquet on MinIO -> Zetaris
+registration). `scripts/up-full.sh --check` runs the checks only and starts nothing. UI: `http://localhost:5173`,
+API: `http://localhost:8000/docs`.
+
+Ask a question in the UI, or:
+`curl -X POST localhost:8000/run -H "Content-Type: application/json" -d '{"input":{"query":"Why did Saturday dinner revenue drop 18%?"}}'`.
+The trace is written to `logs/trace-<run_id>.jsonl` and to stdout. From a Python checkout, `make seed`,
+`make e2e-full` and `python run.py` do the same steps.
+
+**Secondary provider: OpenCode Go.** To use OpenCode Go (OpenAI-compatible) instead of Nightshift, set
+`MODEL_PROVIDER=opencode` and `MODEL_API_KEY` in `.env` (`MODEL_BASE_URL` and `MODEL_ID` are in `.env.example`).
+Nothing falls back silently: with `MODEL_PROVIDER=meterless`, a Nightshift failure is reported as an error, not
+retried on OpenCode Go.
+
+**Docker and Nightshift (UNVERIFIED).** The `api` container reaches Nightshift through `host.docker.internal`
+(`METERLESS_BASE_URL_FROM_DOCKER` in `docker-compose.yml`). Whether Nightshift listens on an interface a
+container can reach, and not only on 127.0.0.1, is UNVERIFIED. If the container cannot reach it, run the API on
+the host instead: `SAMPLE_MODE=false python run.py`. The `postgres` and `minio` services publish 5432 and 9000 on the host, which is where `.env` points a host process.
+
+**Settings screen.** The UI Settings page shows the current mode (`sample_mode`, `data_backend`, `model_mode`) and
+the current model connection (provider, URL, model id, and whether a token is set; the token itself is never
+returned). It lets you set the Nightshift URL, Runtime token and model id, and has a **Test connection** button.
+Changes live in the API process's memory only, apply to subsequent runs and are never written to disk. In SAMPLE mode the
+model cannot be changed, because SAMPLE replays recorded runs. Changing the URL requires entering the token again in the same
+request, so a stored token cannot be redirected to another host. Test connection lists the models from
+`GET {base}/models`, then sends one tiny chat completion, and reports what failed (unreachable, unauthorized, no models,
+model unavailable, timeout). Endpoints: `GET /settings`, `PUT /settings/model`, `POST /settings/test` (see the API table).
 
 ## What the agent does
 
@@ -96,13 +135,13 @@ Runs are bounded: at most 3 hypotheses, 2 retries each, 12 investigate+verify st
 ## Sponsor technology
 
 - **Zetaris** is the single federated SQL surface. POS tickets, ticket items and table events live in PostgreSQL. Rosters, plate returns and reviews live as Parquet on MinIO. Both are registered by `scripts/init_zetaris.py` (CREATE DATASOURCE, REGISTER DATASOURCE TABLE, CREATE LIGHTNING DATABASE, CREATE LIGHTNING FILESTORE TABLE). Every Investigator query joins the two stores in one statement (`app/metrics.py`). The Verifier's independent V1 re-query goes through Zetaris again. Remove Zetaris and the agent cannot read its data.
-- **Meterless** provides the World Model agent engine, implemented in-repo after the Meterless reference architecture (`app/worldmodel/`). `WorldStoreService` is an append-only, replayable store with content-hash ids. `IngestPipelineService` gives idempotent, resumable writes with provenance. `ContextBuilderService` builds the structured payload the Verifier reads (`app/agent/verifier.py`); the Writer reads hypotheses and evidence through the ingest pipeline and does not use the context builder. Meterless' engines are reference architectures, so this is our own implementation of the World Model minimum (the three services above), not a Meterless-hosted service, and model calls do not go through it. Every mutation is a `wm_mutation` trace event and a line in `logs/worldmodel-<run_id>.jsonl`.
+- **Meterless** provides the World Model agent engine, implemented in-repo after the Meterless reference architecture (`app/worldmodel/`). `WorldStoreService` is an append-only, replayable store with content-hash ids. `IngestPipelineService` gives idempotent, resumable writes with provenance. `ContextBuilderService` builds the structured payload the Verifier reads (`app/agent/verifier.py`); the Writer reads hypotheses and evidence through the ingest pipeline and does not use the context builder. Meterless' engines are reference architectures, so this is our own implementation of the World Model minimum (the three services above), not a Meterless-hosted service, and model calls do not go through it. **Meterless Nightshift is the primary model provider** (`MODEL_PROVIDER=meterless`, implemented in `app/adapters/model.py`): the model calls of the Planner, Verifier and Writer go to the Nightshift Runtime (an OpenAI-compatible endpoint) with the user's own provider key held inside Nightshift. The World Model remains our own implementation of the reference architecture. Live verification against a real Nightshift: PENDING. Every mutation is a `wm_mutation` trace event and a line in `logs/worldmodel-<run_id>.jsonl`.
 - **Cursor** was almost not used. Development was done with Claude as the coding assistant (17 of the 21 commits made before this section was written carry a `Co-Authored-By: Claude` trailer). The repository carries the project rules in `.cursor/rules/`, but the team never received Cursor sponsor credit and did not use Cursor as its development environment. A HackOS chat message told us the Cursor requirement had been dropped. We could not verify it, so we state the facts here and leave the judgement to the reviewers.
-- **NVIDIA** is not used in the core build.
+- **NVIDIA** is not used in the core build. Any provider key, NVIDIA's included, is entered by the user in Nightshift's Providers tab; this repository never handles it.
 
 ## AI and model usage
 
-- **Model:** `deepseek-v4.1-flash` through OpenCode Go (an OpenAI-compatible endpoint, `MODEL_BASE_URL`) for the Planner's hypothesis selection, the Verifier's one structured pass/block judgment and the Writer's prose. An optional backup provider (DeepInfra, also OpenAI-compatible) takes over after repeated transport errors when `MODEL_BACKUP_API_KEY` is set. The model never writes SQL, never recomputes a number and never sees ground truth.
+- **Model:** whatever the user configures in Meterless Nightshift (the default routing id is `meterless/auto`, a routing mode and not a model id), used for the Planner's hypothesis selection, the Verifier's one structured pass/block judgment and the Writer's prose. The secondary provider is OpenCode Go (`MODEL_PROVIDER=opencode`, an OpenAI-compatible endpoint, `MODEL_BASE_URL`); with it, an optional backup provider (DeepInfra, also OpenAI-compatible) takes over after repeated transport errors when `MODEL_BACKUP_API_KEY` is set. **The published 8/10 scorecard was measured with `deepseek-v4.1-flash` through OpenCode Go and is not claimed for any other model.** The Verifier's prompt was tuned on that model, so another model, including one routed by `meterless/auto`, can score differently. The model never writes SQL, never recomputes a number and never sees ground truth.
 - **Agent framework:** none. The Planner, Investigator, Verifier and Writer and their orchestrator are written in this repository (`app/agent/`, `app/orchestrator.py`). The World Model services (`app/worldmodel/`) are implemented from Meterless' World Model reference architecture.
 - **Sponsor technology:** see [Sponsor technology](#sponsor-technology). Cursor was almost not used and NVIDIA is not used.
 - **Libraries:** `requirements.txt` (FastAPI, Uvicorn, PyYAML, plus pyarrow, psycopg and minio for the loader only) and `ui/package.json` (React, Vite, Tailwind CSS). Zetaris runs as its own local Docker bundle.
@@ -122,6 +161,9 @@ Runs are bounded: at most 3 hypotheses, 2 retries each, 12 investigate+verify st
 | `POST /findings/{id}/approve` · `/reject` | Manager decision, appended to `logs/approvals.jsonl` |
 | `GET /traces/{run_id}` | The run trace (`?format=jsonl` returns the raw file) |
 | `GET /health` | `{status, zetaris: up\|down\|sample\|local, model, sample_mode}` |
+| `GET /settings` | `{mode: {sample_mode, data_backend, model_mode}, model: {provider, base_url, model_id, token_set, source}, providers[]}`. The token is never returned. `providers` lists Meterless Nightshift (primary) and OpenCode Go with their default URL and model id |
+| `PUT /settings/model` | Body `{provider, base_url?, model_id?, token?}`. Stored in process memory only and applied to subsequent runs; returns the `GET /settings` payload. A new `base_url` needs `token` in the same request (else 422 `TokenRequiredForNewBaseUrl`). In SAMPLE mode: 409 `SampleModeNoModel` |
+| `POST /settings/test` | Same optional body, a one-off override that is not saved. Always HTTP 200 with `{ok, provider, base_url, latency_ms, models[], selected_model, selected_model_available, error}`; `error.type` is one of `Unreachable`, `Unauthorized`, `NoModels`, `ModelUnavailable`, `ChatFailed`, `Timeout`, `NotConfigured`, `SampleMode`. Timeouts are at most 10 s |
 
 There are three input/output pairs in `input_examples/` and `output_examples/`: the demo question, a non-cause probe ("No, the kitchen was not slow") and an abstention ("the data does not record menu changes").
 
@@ -131,7 +173,7 @@ Each run writes `logs/trace-<run_id>.jsonl` (schema version 1). The event set is
 
 ## Scorecard
 
-`make scorecard` runs the ten canned questions in `app/scorecard/questions.yaml` on a fresh seeded dataset. It joins each trace and World Model log with the simulator's ground truth and prints the table published below. The agent never reads ground truth: only the harness loads it, and a default-suite test greps agent-side modules for any reference. It needs the FULL stack (Zetaris, a model key and the seeded stores), so it cannot run in SAMPLE mode.
+`make scorecard` runs the ten canned questions in `app/scorecard/questions.yaml` on a fresh seeded dataset. It joins each trace and World Model log with the simulator's ground truth and prints the table published below. The agent never reads ground truth: only the harness loads it, and a default-suite test greps agent-side modules for any reference. It needs the FULL stack (Zetaris, a configured model and the seeded stores), so it cannot run in SAMPLE mode. The published table was measured with `deepseek-v4.1-flash`; running the harness through another model gives a different, unpublished result.
 
 The metrics are root-cause hit rate, evidence precision, unsupported claims caught vs wrongly blocked, decoy rejection, abstention correctness and retries per investigation.
 
@@ -169,6 +211,7 @@ cd ui && npm ci && npm test && npm run dev   # UI on :5173, proxies /api to :800
 |---|---|
 | `SAMPLE_MODE` | `true`: replay the bundle in `logs/examples/` |
 | `DATA_BACKEND` | `zetaris` (judged path) · `local`: the seeded simulator in SQLite (tests and keyless dev only) |
+| `MODEL_PROVIDER` | `meterless` (default, Nightshift: `METERLESS_BASE_URL`, `METERLESS_RUNTIME_TOKEN`, `METERLESS_MODEL`, `METERLESS_APP`) · `opencode` (`MODEL_API_KEY`, `MODEL_BASE_URL`, `MODEL_ID`) |
 | `MODEL_MODE` | `live` · `record`: QA machine writes `cassettes/` with secrets masked · `record-missing`: replay a cassette when one exists, record it when not · `replay`: a cassette miss fails loudly · `fake`: offline rules (tests only) |
 
 The sample bundle in `logs/examples/` and the three example pairs were recorded from a FULL-mode run (Zetaris, `deepseek-v4.1-flash`); its `recorded_with` field says so. The model responses behind it are committed as cassettes in `cassettes/`, and replaying them against Zetaris (`DATA_BACKEND=zetaris MODEL_MODE=replay python scripts/seed_sample.py --out <tmpdir>`) reproduces the same answers without model calls. `make e2e` replays a second cassette set recorded on the local store (`make record-e2e`), because evidence ids depend on the data backend; see `cassettes/README.md`. A model call is not perfectly repeatable, so a re-recorded bundle can differ in wording or in which hypotheses the planner picks.
@@ -199,7 +242,7 @@ app/metrics.py    the one metric catalog (SQL per dialect)
 app/sim/          simulator, incidents, loader, local keyless store
 app/api/ app/report/ app/scorecard/ app/logging/
 ui/               Vite + React + TypeScript (report, finding, evidence & trace, drill-down)
-scripts/          init_zetaris.py, seed_sample.py, e2e.py, meterless_gate.py
+scripts/          up-full.sh (make full), init_zetaris.py, seed_sample.py, e2e.py, meterless_gate.py
 ```
 
 ## License
