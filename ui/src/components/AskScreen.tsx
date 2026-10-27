@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { useActivity, useActivityBoost } from "../activity";
 import { api } from "../api";
 import type { Health, RunResponse } from "../types";
+import { WaitingProgress } from "./Activity";
 import { Answer } from "./Answer";
 import { btnPrimary, field, panel } from "./common";
 
@@ -11,6 +13,14 @@ const SUGGESTED = [
   "Who is our worst server?",
 ];
 const VISIBLE_SUGGESTIONS = 4;
+
+/** The UI names its run, so the progress block can bind to exactly this run in GET /activity. */
+export function newRunId(): string {
+  const bytes = new Uint8Array(4);
+  if (globalThis.crypto?.getRandomValues) globalThis.crypto.getRandomValues(bytes);
+  else bytes.forEach((_, i) => (bytes[i] = Math.floor(Math.random() * 256)));
+  return "ui-" + Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+}
 
 const chip =
   "rounded-full border border-line bg-surface-2 px-3 py-1.5 text-left text-sm text-ink transition-colors duration-150 hover:border-line-strong disabled:opacity-50";
@@ -42,17 +52,27 @@ export function AskScreen({ health }: { health: Health | null }) {
   const [busy, setBusy] = useState(false);
   const [run, setRun] = useState<RunResponse | null>(null);
   const [showAll, setShowAll] = useState(false);
+  const [pending, setPending] = useState<{ runId: string; startedAt: number } | null>(null);
+  const inflight = useRef(false);
+  const { data, receivedAt } = useActivity();
+  useActivityBoost(busy);
 
   const ask = async (q: string) => {
+    if (inflight.current) return;
+    inflight.current = true;
+    const runId = newRunId();
     setQuestion(q);
     setBusy(true);
     setRun(null);
+    setPending({ runId, startedAt: Date.now() });
     try {
-      setRun(await api.run(q));
+      setRun(await api.run(q, undefined, runId));
     } catch (e) {
       setRun({ run_id: "", status: "error", question: q, error: { type: "RequestFailed", message: String(e), recoverable: true } });
     } finally {
+      inflight.current = false;
       setBusy(false);
+      setPending(null);
     }
   };
 
@@ -76,8 +96,12 @@ export function AskScreen({ health }: { health: Health | null }) {
           </button>
         ) : null}
       </div>
+      {pending ? (
+        <div className="mt-6">
+          <WaitingProgress label="Working…" startedAt={pending.startedAt} receivedAt={receivedAt} runs={data?.active.filter((r) => r.run_id === pending.runId) ?? []} />
+        </div>
+      ) : null}
       <div aria-live="polite">
-        {busy ? <p role="status" className="mt-6 text-sm text-muted">Investigating: planning, querying, then verifying every number…</p> : null}
         {run ? (
           <div className="mt-6 border-t border-line pt-6">
             {run.error?.type === "SampleModeMiss" ? <SampleMiss run={run} onAsk={ask} /> : <Answer run={run} onAsk={ask} />}
