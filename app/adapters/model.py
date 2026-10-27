@@ -200,7 +200,10 @@ def mask_secrets(text: str, env: dict[str, str] | None = None) -> str:
 
 
 def extract_json(text: str) -> dict[str, Any]:
-    """Models wrap JSON in prose or code fences; take the outermost object."""
+    """Models wrap JSON in prose or code fences; take the outermost object. Reasoning models (observed: Nemotron 3 Ultra
+    through Nightshift) put their thinking before a closing `</think>` and may quote braces in it, so keep what follows."""
+    if "</think>" in text:
+        text = text.rsplit("</think>", 1)[1]
     start, end = text.find("{"), text.rfind("}")
     if start < 0 or end <= start:
         raise ValueError(f"no JSON object in model output: {text[:120]!r}")
