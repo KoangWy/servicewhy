@@ -121,7 +121,7 @@ def _run_test(cfg: ModelConfig, token_missing: bool) -> dict[str, Any]:
             hint += " The provider's own key is entered inside Nightshift, not here."
         return _result(cfg, t0, models, False, _err("NotConfigured", msg, hint))
     unreachable_hint = ("Start Nightshift and check the Runtime URL; from a container use host.docker.internal "
-                        "instead of 127.0.0.1 (UNVERIFIED: depends on the Docker setup)."
+                        "instead of 127.0.0.1 (works on Docker Desktop for Mac; UNVERIFIED on Linux)."
                         if cfg.provider == "meterless" else "Check the base URL and your network.")
     try:
         try:

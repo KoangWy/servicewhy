@@ -149,7 +149,7 @@ else
       fail "Nightshift answered HTTP $CODE at $BASE/models (expected 200)." \
            "check METERLESS_BASE_URL in .env against the Nightshift URL in the Console (it should end in /v1)" ;;
   esac
-  info "the api container reaching Nightshift on the host is UNVERIFIED; if it cannot, run the API on the host: SAMPLE_MODE=false python run.py"
+  info "the api container reaches Nightshift through host.docker.internal (checked on Docker Desktop for Mac, UNVERIFIED on Linux); if it cannot, run the API on the host: SAMPLE_MODE=false python run.py"
 fi
 
 if [ "$FAILED" -ne 0 ]; then

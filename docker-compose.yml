@@ -16,9 +16,9 @@ services:
       METERLESS_RUNTIME_TOKEN: ${METERLESS_RUNTIME_TOKEN:-}
       METERLESS_MODEL: ${METERLESS_MODEL:-meterless/auto}
       METERLESS_APP: ${METERLESS_APP:-servicewhy}
-      # Meterless Nightshift runs on the host. Whether it listens on an interface a container can reach (not only
-      # 127.0.0.1) is UNVERIFIED. If the container cannot reach it, run the API on the host instead:
-      # `SAMPLE_MODE=false python run.py` (the UI can stay in Docker or run via `npm run dev`).
+      # Meterless Nightshift runs on the host and listens on loopback only. On Docker Desktop for Mac a container still reaches it
+      # through host.docker.internal (checked 2026-10-27); on Linux this is UNVERIFIED. If the container cannot reach it, run the API
+      # on the host instead: `SAMPLE_MODE=false python run.py` (the UI can stay in Docker or run via `npm run dev`).
       METERLESS_BASE_URL: ${METERLESS_BASE_URL_FROM_DOCKER:-http://host.docker.internal:8088/v1}
       LOGS_DIR: /app/logs-host
       # the Zetaris bundle publishes its ports on the host; reach it from inside this container
