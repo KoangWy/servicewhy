@@ -9,7 +9,7 @@ import json
 import sys
 import time
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 from app.adapters.model import mask_secrets
 
@@ -23,12 +23,13 @@ class TraceError(ValueError):
 
 
 class Trace:
-    def __init__(self, run_id: str, logs_dir: str | Path, *, echo: bool = True):
+    def __init__(self, run_id: str, logs_dir: str | Path, *, echo: bool = True,
+                 on_event: Callable[[dict[str, Any]], None] | None = None):
         self.run_id = run_id
         self.path = Path(logs_dir) / f"trace-{run_id}.jsonl"
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.path.write_text("", encoding="utf-8", newline="\n")
-        self.echo, self.events = echo, []
+        self.echo, self.events, self.on_event = echo, [], on_event  # on_event: live-activity listener, never fatal
 
     def emit(self, event: str, agent_name: str, action: str, *, input_summary: str = "", output_summary: str = "",
              query: str | None = None, rows_used: int | None = None, verdict: str | None = None,
@@ -50,6 +51,11 @@ class Trace:
         with self.path.open("a", encoding="utf-8", newline="\n") as fh:
             fh.write(json.dumps(rec, default=str) + "\n")
         self.events.append(rec)
+        if self.on_event is not None:
+            try:
+                self.on_event(rec)
+            except Exception:  # a listener must never break a run
+                pass
         if self.echo and event != "wm_mutation":
             level = "WARN" if event == "block" or status != "success" else "INFO"
             text = output_summary or input_summary
@@ -62,7 +68,14 @@ class Trace:
 
 
 def read_trace(path: str | Path) -> list[dict[str, Any]]:
-    events = [json.loads(line) for line in Path(path).read_text(encoding="utf-8").splitlines() if line.strip()]
+    text = Path(path).read_text(encoding="utf-8")
+    lines = [line for line in text.split("\n") if line.strip()]
+    if lines and not text.endswith("\n"):  # a trace still being written: the last line may be half-flushed
+        try:
+            json.loads(lines[-1])
+        except ValueError:
+            lines.pop()
+    events = [json.loads(line) for line in lines]
     for e in events:
         if e.get("schema_version") != SCHEMA_VERSION:
             raise TraceError(f"unsupported trace schema_version {e.get('schema_version')!r} in {path}")
