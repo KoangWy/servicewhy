@@ -1,7 +1,9 @@
-"""Verifier: blocks any claim the data does not support (SPEC §7).
+"""Verifier: blocks a claim whose numbers do not reproduce, whose sample is too thin, that has no comparison
+group, or that names a cause the data never recorded (SPEC §7).
 
 Deterministic rules run in code, each one a trace event; the model adds one structured judgment
-(block/pass + reason) and never recomputes numbers.
+(block/pass + reason) that the claim matches what was measured, and never recomputes numbers. Confounders that
+remain are stated as the finding's uncertainty and left to the manager's approval, not blocked here.
 
   V1  every value recomputed by an independent second query through the same federated surface
   V2  minimum sample per segment (block below N_BLOCK, downgrade below N_FULL)
@@ -19,9 +21,19 @@ from app.metrics import METRICS
 # Initial values (SPEC §7). Tuned once before the feature freeze, then published in the README.
 THRESHOLDS = {"V1_tolerance": 0.02, "V2_n_block": 15, "V2_n_full": 30, "V4_decoy_share": 0.5, "V5_max_retries": 2}
 
-SYSTEM = """You are the Verifier of ServiceWhy. You judge whether evidence supports a claim about a restaurant.
-You never compute or restate numbers. Block when the contrast does not test the claim, when the effect could be
-explained by something the evidence does not rule out, or when the claim says more than the evidence shows.
+SYSTEM = """You are the Verifier of ServiceWhy, the last check before a finding reaches a restaurant manager.
+Code has already re-queried each item's value and baseline independently, checked sample sizes and checked that the evidence includes a comparison group. Do not redo those checks and never compute or restate numbers.
+
+You get one claim, a proposed_status and the evidence items that passed the code checks. supports_claim=true means the contrast moved in the harmful direction by at least that metric's relative and absolute thresholds; it is false for descriptive items and for items without a baseline. Descriptive items only describe and never support a claim. small_sample=true means the sample is thin (confidence is already lowered for it).
+
+If proposed_status is "supported" (at least one item supports the claim): only the part of the claim the supporting items measure is shown to the manager, with an uncertainty note, as a recommendation the manager must approve.
+- pass when a supporting item measures what the claim, or one part of a compound claim ("A or B", "A and B"), says. An observed contrast is enough: do not block because other factors could contribute, because the data is observational, or because a compound claim is only partly covered.
+- block when (1) the supporting items measure something other than what the claim is about, (2) the claim's direction is the opposite of what the values show, or (3) the claim names a cause (a menu or price change, a promotion, weather, an event, equipment, or a person or their behaviour) that no item measures. An outcome that moved does not establish a named cause the data never recorded.
+
+If proposed_status is "rejected" (no item supports the claim): it is shown to the manager as "checked, not a cause".
+- pass when at least one item measures a quantity the claim, or one part of it, is about. A flat result, or one in the opposite direction, is the expected reason for a rejection: do not block for it, and do not block because part of a compound claim was not measured.
+- block only when no item measures anything the claim is about.
+
 Return ONE JSON object: {"verdict": "pass" | "block", "reason": one sentence}."""
 
 LEVELS = ("low", "medium", "high")

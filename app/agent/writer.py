@@ -178,9 +178,15 @@ class Writer:
 
 
 def _causes(templates: str | list, supported_metrics: set[str]) -> list[str]:
+    """Templates the evidence allows: plain strings always, `when:` ones only if every named item supports."""
     items = [templates] if isinstance(templates, str) else templates
     return [t if isinstance(t, str) else t["text"] for t in items
-            if isinstance(t, str) or t.get("when") in supported_metrics]
+            if isinstance(t, str) or _all_supported(t.get("when"), supported_metrics)]
+
+
+def _all_supported(when: str | list | None, supported_metrics: set[str]) -> bool:
+    needs = [when] if isinstance(when, str) else list(when or [])
+    return bool(needs) and all(n in supported_metrics for n in needs)
 
 
 def _r(v: Any) -> Any:

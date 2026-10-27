@@ -4,7 +4,7 @@
 
 A restaurant manager asks *"why did Saturday dinner revenue drop?"* and gets an evidence-backed
 answer built from point-of-sale tickets, table-service events, shift rosters and guest reviews. A
-**verifier re-queries every number, then blocks any claim the data does not support**. It
+**verifier re-queries every number, then blocks any claim its numbers, sample size or comparison do not support**. It
 retries on a wider sample, or answers "insufficient evidence".
 
 > **All data is synthetic.** A seeded discrete-event simulator generates every guest, ticket, shift
@@ -69,7 +69,7 @@ question ─▶ Planner ─▶ Investigator ─▶ Verifier ──pass──▶ 
 |---|---|
 | **Planner** | Turns the question into intent, time and segment slots, and at most 3 hypotheses from `app/agent/hypotheses.yaml`. Code enforces policy: a revenue question always carries the demand and spend hypotheses, and a request to rank individual staff is reframed into staffing conditions. |
 | **Investigator** | Runs query plans only through the data-access adapter (Zetaris federated SQL that joins PostgreSQL with the Parquet filestore). It computes contrasts: focus vs baseline, cross-section, dose-response across tables per server, bussers on duty, and time window. Each result is stored as a World Model evidence item. |
-| **Verifier** | Applies the deterministic rules V1–V5 below, then one structured model judgment (`block`/`pass` plus a reason; the model never recomputes numbers). It can block. A block widens the sample to more of the same nights and retries. |
+| **Verifier** | Applies the deterministic rules V1–V5 below, then one structured model judgment (`block`/`pass` plus a reason) that the claim matches what was measured: it blocks a claim whose metric or direction does not match, or that names a cause the data never recorded. The model never recomputes numbers. Confounders that remain are stated as the finding's uncertainty and left to the manager's approval. A block widens the sample to more of the same nights and retries. |
 | **Writer** | Writes findings in the fixed contract (cause, evidence, confidence, effect size, uncertainty, recommended action, status) and the answer. A number guard rejects any figure the evidence does not contain. |
 
 Causes are always **staffing or process conditions** (section, shift, time window), never named people. The manager approves or rejects every recommended action (`POST /findings/{id}/approve|reject`), and each decision is logged with role and timestamp.
@@ -84,7 +84,7 @@ Causes are always **staffing or process conditions** (section, shift, time windo
 | V4 | Decoy split: how much of a revenue change fewer parties explain vs revenue per party | volume share ≥ 50% | downgrade service findings and force the split into the answer |
 | V5 | Retry budget | > 2 rejections | "insufficient evidence" |
 
-Thresholds live in `app/agent/verifier.py` (`THRESHOLDS`). They are **initial values**. They get tuned once on real runs before the feature freeze. After that they and the simulator parameters are frozen, and the freeze is the commit that publishes the scorecard below.
+Thresholds live in `app/agent/verifier.py` (`THRESHOLDS`). They are **initial values**. They get tuned once on real runs before the feature freeze. After that they and the simulator parameters are frozen, and the freeze is the commit that publishes the scorecard below. The same single pass also covers the verifier's model-judgment prompt (`SYSTEM` in `app/agent/verifier.py`) and the hypothesis library's claim and cause wording (`app/agent/hypotheses.yaml`), which freeze with them. That pass used recorded verifier prompts and canned-question traces only; simulator ground truth is read by the scorecard harness alone.
 
 Runs are bounded: at most 3 hypotheses, 2 retries each, 12 investigate+verify steps per run, 60 s per model call and 40 model calls per run.
 
