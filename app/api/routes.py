@@ -1,6 +1,7 @@
 """REST surface (SPEC §8). The UI and judges use the same endpoints and the same JSON contracts."""
 from __future__ import annotations
 
+import re
 import time
 from pathlib import Path
 from typing import Any
@@ -14,6 +15,7 @@ from app.report import generator
 from app.sample import SampleMiss
 
 router = APIRouter()
+RUN_ID = re.compile(r"^[A-Za-z0-9._-]{1,64}$")  # run ids end up in file names
 
 
 def _state(request: Request):
@@ -47,6 +49,8 @@ def health(request: Request) -> dict[str, Any]:
 def run(body: RunRequest, request: Request):
     svc = _state(request)
     question = body.input.query
+    if body.run_id is not None and not RUN_ID.match(body.run_id):
+        return _error(422, "InvalidRunId", "run_id must match [A-Za-z0-9._-] and be 1-64 characters long")
     if svc.settings.sample_mode or body.options.sample_mode:
         t0 = time.time()
         try:
@@ -70,12 +74,21 @@ def create_report(request: Request, body: ReportRequest | None = None):
         if rep is None:
             return _error(404, "SampleModeMiss", "no recorded report in the sample bundle")
     else:
-        if body and body.period:
-            period = body.period.model_dump()
-        else:
-            rows = svc.data().query(f"SELECT MAX(business_date) AS d FROM {svc.settings.pg_source}.pos_tickets", limit=1)
-            period = generator.default_period(str(rows[0]["d"])[:10])
-        rep = generator.generate(svc.orchestrator, period)
+        if not svc.activity.begin_report():  # one generation at a time (StrictMode / a reload must not start two)
+            return JSONResponse(status_code=409, content={
+                "status": "error", "report_job": svc.activity.report_job(),
+                "error": {"type": "ReportInProgress", "message": "a report is already being generated",
+                          "recoverable": True}})
+        try:
+            if body and body.period:
+                period = body.period.model_dump()
+            else:
+                rows = svc.data().query(f"SELECT MAX(business_date) AS d FROM {svc.settings.pg_source}.pos_tickets",
+                                        limit=1)
+                period = generator.default_period(str(rows[0]["d"])[:10])
+            rep = generator.generate(svc.orchestrator, period)
+        finally:
+            svc.activity.end_report()
         for r in rep.pop("_runs"):
             svc.registry.add_run(r)
     svc.registry.add_report(rep)
@@ -122,7 +135,8 @@ def drilldown(finding_id: str, request: Request, body: DrilldownRequest | None =
         override = {"intent": "explain", "target_metric": f["effect_size"]["metric"], "slots": slots,
                     "hypotheses": [f["library_id"]], "missing_data": None, "reason": "drill-down on one finding",
                     "policy_notes": [f"Drill-down on {finding_id}: same hypothesis, fresh queries."]}
-        resp = svc.orchestrator.run(question, plan_override=override, parent_finding=finding_id)
+        resp = svc.orchestrator.run(question, plan_override=override, parent_finding=finding_id,
+                                    kind="drilldown")
     svc.registry.add_run(resp)
     return {"parent_finding": finding_id, "run": resp}
 
@@ -148,7 +162,7 @@ def reject(finding_id: str, request: Request, body: DecisionRequest | None = Non
 @router.get("/traces/{run_id}")
 def get_trace(run_id: str, request: Request, format: str = "json"):
     svc = _state(request)
-    if not all(c.isalnum() or c in "-_." for c in run_id):
+    if not RUN_ID.match(run_id):
         raise HTTPException(400, "bad run id")
     candidates = [svc.settings.logs_dir / f"trace-{run_id}.jsonl", svc.sample.trace_path(run_id)]
     path = next((p for p in candidates if Path(p).exists()), None)
