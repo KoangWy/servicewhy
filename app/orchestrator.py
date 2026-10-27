@@ -133,7 +133,8 @@ class Orchestrator:
         decoy = None
         if plan.get("target_metric") in REVENUE_METRICS:
             decoy = self._decoy(results, inv, verifier)
-        findings = [writer.finding(r["hyp"], r["verdict"], r["evidence"], r["scope"].label, decoy)
+        findings = [writer.finding(r["hyp"], r["verdict"], r["evidence"], r["scope"].label, decoy,
+                                   focus_plain=r["scope"].label_without_section, section=r["scope"].section)
                     for r in results if r["verdict"]["status"] == "supported"]
         order = {"high": 0, "medium": 1, "low": 2}
         findings.sort(key=lambda f: (order[f["confidence"]], f["family"] == "volume"))

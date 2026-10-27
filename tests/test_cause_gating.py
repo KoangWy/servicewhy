@@ -7,7 +7,7 @@ from app.agent.planner import load_library
 from app.agent.writer import _causes, fill
 
 LIB = load_library()
-FOCUS = {"focus": "on Sat 03 Oct"}
+FOCUS = {"focus": "on Sat 03 Oct", "focus_plain": "on Sat 03 Oct"}
 
 
 def cause(hid: str, supported: set[str], found: dict[str, str] | None = None) -> str:

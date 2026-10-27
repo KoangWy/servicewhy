@@ -3,6 +3,8 @@
 Modes (env `MODEL_MODE`):
   live    OpenAI-compatible provider (OpenCode Go), failover to the backup provider (DeepInfra)
   record  live call, response stored as a cassette (secrets masked) — run only on the QA machine
+  record-missing  replay a cassette when one exists, else live call + store it: re-recording after a prompt change
+          keeps every unchanged answer instead of re-sampling it
   replay  answer from cassettes keyed by (role, system prompt, prompt); a miss raises CassetteMiss
   fake    deterministic offline responder (tests and keyless development only)
 """
@@ -21,7 +23,7 @@ from typing import Any, Callable
 
 Generator = Callable[..., dict[str, Any]]
 
-MODES = ("live", "record", "replay", "fake")
+MODES = ("live", "record", "record-missing", "replay", "fake")
 _SECRET_ENV = re.compile(r"(KEY|PASSWORD|TOKEN|SECRET)$")
 
 
@@ -127,14 +129,15 @@ class ModelAdapter:
                 from app.adapters.fake_model import respond
                 self._fake = respond
             return {"text": self._fake(role, system_prompt, prompt), "session": self.session_id, "source": "fake"}
-        if self.mode == "replay":
+        if self.mode in ("replay", "record-missing"):
             path = self._path(role, key)
-            if not path.exists():
+            if path.exists():
+                rec = json.loads(path.read_text(encoding="utf-8"))
+                return {"text": rec["response"]["text"], "session": self.session_id, "source": f"cassette:{key}"}
+            if self.mode == "replay":
                 raise CassetteMiss(f"no cassette for role={role} key={key} in {self.cassette_dir}")
-            rec = json.loads(path.read_text(encoding="utf-8"))
-            return {"text": rec["response"]["text"], "session": self.session_id, "source": f"cassette:{key}"}
         out = self._live_call(prompt, system_prompt)
-        if self.mode == "record":
+        if self.mode in ("record", "record-missing"):
             path = self._path(role, key)
             path.parent.mkdir(parents=True, exist_ok=True)
             rec = {"role": role, "key": key, "model": out.get("model"), "recorded_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),

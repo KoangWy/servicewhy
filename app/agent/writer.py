@@ -18,12 +18,16 @@ from app.metrics import METRICS
 SYSTEM = """You are the Writer of ServiceWhy. Write the manager-facing answer from verified findings only.
 Name staffing or process conditions (section, shift, time window), never individual people. Every number you
 write must come from the input, and cite the evidence id in square brackets after it. Keep it under 120 words.
+Each not_causes entry has a "negative" sentence that says what was checked and for which dates: report it as stated and never
+say the evidence lacks a day, section or shift that sentence names. State only what the findings and not_causes say; do not
+add outcomes or recommendations that are not in recommended_action.
 Return ONE JSON object: {"answer": "..."}."""
 
 DIM_KEYS = {"section": "section", "tables_per_server": "tables_per_server", "bussers_on": "bussers_on",
             "window": "window", "theme": "theme"}
 # wording used in actions/uncertainty when the evidence did not pin a value down (never in the cause)
-DEFAULTS = {"section": "the affected section", "tables_per_server": "too many", "bussers_on": "one",
+DEFAULTS = {"section": "the affected section", "section_ref": "the affected section",
+            "tables_per_server": "too many", "bussers_on": "one",
             "window": "the late window", "theme": "slow service"}
 _NUM = re.compile(r"(?<![\w.])\d+(?:[.,]\d+)*(?:\.\d+)?")
 
@@ -56,14 +60,18 @@ class Writer:
         self.model, self.ingest, self.context, self.trace = model, ingest, context, trace
 
     def finding(self, hyp: dict, verdict: dict, evidence: list[dict], scope_label: str,
-                decoy: dict | None) -> dict[str, Any]:
+                decoy: dict | None, focus_plain: str | None = None, section: str | None = None) -> dict[str, Any]:
         passed = [e for e in evidence if e["id"] in verdict["passed_ids"]]
         supporting = [e for e in passed if e["id"] in verdict.get("supporting_ids", [])]
-        found = {"focus": scope_label}
+        # {focus_plain} is the scope without "in section X", for templates that name the section themselves
+        found = {"focus": scope_label, "focus_plain": focus_plain or scope_label}
         for e in passed:
             dim = e["spec"].get("dim")
             if dim in DIM_KEYS and e["group"] is not None and (e["supports"] or e["descriptive"]):
                 found.setdefault(DIM_KEYS[dim], e["group"])
+        named = found.get("section") or section  # the section the evidence found, else the one the question named
+        if named:
+            found["section_ref"] = f"section {named}"
         primary = supporting[0]  # plans are ordered: the first supporting contrast is the headline
         m = METRICS[primary["metric"]]
         confidence = verdict["confidence"]
@@ -115,7 +123,9 @@ class Writer:
                    "findings": [{k: f[k] for k in ("id", "cause_hypothesis", "confidence", "effect_size", "recommended_action")}
                                 | {"evidence": [{k: e[k] for k in ("evidence_id", "metric", "group", "value", "baseline", "n")}
                                                 for e in f["evidence"][:3]]} for f in findings],
-                   "not_causes": [{"statement": r["statement"], "evidence": r["evidence"]} for r in rejected],
+                   "not_causes": [{"statement": r["statement"], "negative": r["negative"],
+                                   "evidence": [{**e, "value": _r(e["value"]), "baseline": _r(e["baseline"])}
+                                                for e in r["evidence"]]} for r in rejected],
                    "blocked": [{"statement": b["statement"], "reasons": b.get("reasons", [])} for b in blocked],
                    "revenue_split": decoy}
         fallback = self._template(plan, findings, rejected, blocked, decoy)
@@ -136,14 +146,23 @@ class Writer:
                             output_summary=f"rejected model answer: numbers not in evidence {bad[:5]}; using template",
                             verdict="block", status="blocked", data={"unsupported": bad[:20]})
             text = fallback
+        if decoy and decoy.get("volume_share") is not None and "fewer parties explain" not in text:
+            text = f"{text} {self._split_sentence(decoy)}"  # V4: the volume-vs-spend split is always in the answer
         kind = "reframed" if plan["intent"] == "rank_individuals" else "answer"
         return {"answer_type": kind, "summary": text}
+
+    @staticmethod
+    def _split_sentence(decoy: dict) -> str:
+        return (f"Revenue changed {100 * decoy['change_rel']:+.0f}% vs the baseline: fewer parties explain "
+                f"{100 * decoy['volume_share']:.0f}% of it and lower revenue per party "
+                f"{100 * (1 - decoy['volume_share']):.0f}% [{decoy['evidence_ids'][0]}, {decoy['evidence_ids'][1]}].")
 
     @staticmethod
     def unsupported_numbers(text: str, question: str, payload: dict) -> list[str]:
         allowed: set[str] = set(_NUM.findall(question))
         blob = json.dumps(payload, default=str)
         for raw in re.findall(r"-?\d+(?:\.\d+)?", blob):
+            allowed.add(raw.lstrip("-"))  # as written in the evidence: "03" in "Sat 03 Oct", "00" in "21:00"
             v = abs(float(raw))
             for x in (v, 100 * v):
                 for nd in (0, 1, 2):
@@ -158,9 +177,7 @@ class Writer:
         if plan["intent"] == "rank_individuals":
             parts.append("ServiceWhy does not rank individual staff. The staffing conditions behind slow service were:")
         if decoy and decoy.get("volume_share") is not None:
-            parts.append(f"Revenue changed {100 * decoy['change_rel']:+.0f}% vs the baseline: fewer parties explain "
-                         f"{100 * decoy['volume_share']:.0f}% of it and lower revenue per party "
-                         f"{100 * (1 - decoy['volume_share']):.0f}% [{decoy['evidence_ids'][0]}, {decoy['evidence_ids'][1]}].")
+            parts.append(self._split_sentence(decoy))
         for f in findings:
             e = f["effect_size"]
             parts.append(f"{f['cause_hypothesis']} ({e['delta']}, {e['relative']}) [{e['evidence_id']}] "

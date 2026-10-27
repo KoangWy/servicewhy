@@ -5,6 +5,8 @@
 # tables_per_server this is the dose-response). `filters` narrow the segment for one plan only.
 # `descriptive: true` evidence is reported but never counts as causal support (V3).
 # Templates may use {section} {tables_per_server} {bussers_on} {window} {theme} {focus} {weekdays}.
+# {focus_plain} is {focus} without "in section X": use it in text that names the section itself. {section_ref} reads
+# "section B" when the evidence found a section and "the affected section" otherwise (actions and uncertainty only).
 # A cause template may be {when: <metric>[@<contrast_type>] or a list of them, text: ...}: used only if such evidence
 # (every listed item) supports it, so a finding never says more than its evidence (e.g. "revenue per party fell" needs
 # revenue-per-party support, and "and more tickets were comped" also needs comp-rate support).
@@ -25,14 +27,14 @@
   statement: Revenue per party fell because guests spent less or more tickets were comped
   keywords: [check size, spend, comps, revenue per party, average ticket, discounts]
   cause:
-    - {when: net_revenue_per_party@period_vs_baseline, text: "Revenue per party fell {focus}, concentrated in section {section}"}
+    - {when: net_revenue_per_party@period_vs_baseline, text: "Revenue per party fell {focus_plain}, concentrated in section {section}"}
     - {when: [net_revenue_per_party@period_vs_baseline, comp_rate@period_vs_baseline], text: "Revenue per party fell {focus}: guests spent less and more tickets were comped"}
     - {when: net_revenue_per_party@period_vs_baseline, text: "Revenue per party fell {focus}"}
     - {when: comp_rate@period_vs_baseline, text: "More tickets were comped {focus} than in the baseline"}
-    - {when: net_revenue_per_party@cross_section, text: "Section {section} brought in less revenue per party than the other sections {focus}"}
+    - {when: net_revenue_per_party@cross_section, text: "Section {section} brought in less revenue per party than the other sections {focus_plain}"}
   negative: "Revenue per party {focus} was in line with the baseline"
   uncertainty: "Spend, comps and service delays move together; this contrast alone cannot say which came first"
-  action: "Review comps and missed add-on rounds in section {section} {focus}; pair with the staffing finding before changing prices"
+  action: "Review comps and missed add-on rounds in {section_ref} {focus_plain}; pair with the staffing finding before changing prices"
   plans:
     - {metric: net_revenue_per_party, contrast: compare}
     - {metric: comp_rate, contrast: compare}
@@ -43,15 +45,15 @@
   statement: Servers covering too many tables slowed greeting and delivery
   keywords: [server, tables per server, understaffed, greeting, greet, slow service, section, waiting]
   cause:
-    - {when: [order_to_delivery_min@cross_section, greet_min@cross_section], text: "Section {section} ran {tables_per_server} tables per server {focus}; order-to-delivery and greeting slowed there"}
-    - {when: order_to_delivery_min@cross_section, text: "Section {section} ran {tables_per_server} tables per server {focus}; order-to-delivery slowed there"}
-    - {when: greet_min@cross_section, text: "Section {section} ran {tables_per_server} tables per server {focus}; greeting slowed there"}
-    - {when: order_to_delivery_min@dose_response, text: "Parties served at {tables_per_server} tables per server waited longer for food {focus}"}
-    - {when: order_to_delivery_min@cross_section, text: "Order-to-delivery was slower in section {section} {focus}"}
-    - {when: greet_min@cross_section, text: "Greeting was slower in section {section} {focus}"}
+    - {when: [order_to_delivery_min@cross_section, greet_min@cross_section], text: "Section {section} ran {tables_per_server} tables per server {focus_plain}; order-to-delivery and greeting slowed there"}
+    - {when: order_to_delivery_min@cross_section, text: "Section {section} ran {tables_per_server} tables per server {focus_plain}; order-to-delivery slowed there"}
+    - {when: greet_min@cross_section, text: "Section {section} ran {tables_per_server} tables per server {focus_plain}; greeting slowed there"}
+    - {when: order_to_delivery_min@dose_response, text: "Parties served at {tables_per_server} tables per server waited longer for food {focus_plain}"}
+    - {when: order_to_delivery_min@cross_section, text: "Order-to-delivery was slower in section {section} {focus_plain}"}
+    - {when: greet_min@cross_section, text: "Greeting was slower in section {section} {focus_plain}"}
   negative: "Service times did not rise with tables per server {focus}"
-  uncertainty: "Cannot separate greeting lag from order lag inside section {section}; tables per server is the roster value, not observed coverage"
-  action: "Add one server to section {section} {focus}, capping load at 5 tables per server"
+  uncertainty: "Cannot separate greeting lag from order lag inside {section_ref}; tables per server is the roster value, not observed coverage"
+  action: "Add one server to {section_ref} {focus_plain}, capping load at 5 tables per server"
   plans:
     - {metric: order_to_delivery_min, contrast: group, dim: tables_per_server}
     - {metric: order_to_delivery_min, contrast: group, dim: section}
@@ -64,7 +66,7 @@
   cause: ["Only {bussers_on} busser on duty during {window} {focus}; tables took longer to reset", "With only {bussers_on} busser on duty, tables took longer to reset {focus}"]
   negative: "Table reset times {focus} did not depend on how many bussers were on duty"
   uncertainty: "Reset time also depends on party size and table layout, which are not recorded"
-  action: "Keep a second busser on until close {focus} instead of releasing them at the start of {window}"
+  action: "Keep a second busser on until close {focus}"
   plans:
     - {metric: reset_min, contrast: group, dim: bussers_on, filters: {service: dinner}}
     - {metric: reset_min, contrast: group, dim: window, filters: {service: dinner}}

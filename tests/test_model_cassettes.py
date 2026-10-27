@@ -39,6 +39,27 @@ def test_record_masks_secrets_and_replay_returns_the_recording(tmp_path, monkeyp
     assert replay.complete("writer", "prompt with sk-very-secret-123", "sys")["text"] == "answer mentioning …redacted"
 
 
+def test_record_missing_replays_what_exists_and_records_only_what_is_missing(tmp_path):
+    calls = []
+
+    def live(prompt, system_prompt=None, **_):
+        calls.append(prompt)
+        return {"text": f"live:{prompt}", "model": "m"}
+
+    first = ModelAdapter("record-missing", cassette_dir=tmp_path, live=live)
+    assert first.complete("writer", "p1")["text"] == "live:p1"          # missing: live call, stored
+    again = ModelAdapter("record-missing", cassette_dir=tmp_path, live=live)
+    out = again.complete("writer", "p1")
+    assert out["text"] == "live:p1" and out["source"].startswith("cassette:") and calls == ["p1"]  # exists: no call
+    assert again.complete("writer", "p2")["text"] == "live:p2" and calls == ["p1", "p2"]
+    assert len(list(tmp_path.rglob("*.json"))) == 2
+    path = next(tmp_path.rglob("*.json"))
+    rec = json.loads(path.read_text(encoding="utf-8"))
+    rec["response"]["text"] = "edited"
+    path.write_text(json.dumps(rec), encoding="utf-8")
+    assert ModelAdapter("record-missing", cassette_dir=tmp_path, live=live).complete(rec["role"], rec["prompt"], rec["system_prompt"] or None)["text"] == "edited"
+
+
 def test_keys_depend_on_role_and_prompt():
     assert cassette_key("planner", None, "p") != cassette_key("writer", None, "p")
     assert cassette_key("planner", None, "p") != cassette_key("planner", None, "p2")

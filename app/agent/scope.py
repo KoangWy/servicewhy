@@ -36,17 +36,25 @@ class Scope:
             setattr(seg, k, v)
         return seg
 
-    @property
-    def label(self) -> str:
+    def _label(self, with_section: bool) -> str:
         parts = []
         if self.service:
             parts.append(f"at {self.service}")
         if self.window:
             parts.append(f"{_hhmm(self.window[0])}-{_hhmm(self.window[1])}")
-        if self.section:
+        if with_section and self.section:
             parts.append(f"in section {self.section}")
         when = _dates_label(self.focus, self.kind)
         return (" ".join(parts) + " " if parts else "") + when
+
+    @property
+    def label(self) -> str:
+        return self._label(True)
+
+    @property
+    def label_without_section(self) -> str:
+        """For wording that already names the section, so a finding never says "section B" twice."""
+        return self._label(False)
 
     def to_dict(self) -> dict:
         return {"focus": self.focus, "baseline": self.baseline, "weekdays": self.weekdays, "service": self.service,

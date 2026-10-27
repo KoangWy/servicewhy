@@ -125,8 +125,8 @@ The metrics are root-cause hit rate, evidence precision, unsupported claims caug
 
 ```bash
 pip install -r requirements-dev.txt
-python -m pytest -q                 # 66 tests; local seeded store + offline fake model, no keys, no services
-python scripts/e2e.py               # make e2e: demo question through POST /run, asserts every role is in the trace
+python -m pytest -q                 # 77 tests; local seeded store + offline fake model, no keys, no services
+python scripts/e2e.py               # make e2e: demo question through POST /run on the local store, replaying the recorded model; asserts every role is in the trace
 cd ui && npm ci && npm test && npm run dev   # UI on :5173, proxies /api to :8000
 ```
 
@@ -134,9 +134,9 @@ cd ui && npm ci && npm test && npm run dev   # UI on :5173, proxies /api to :800
 |---|---|
 | `SAMPLE_MODE` | `true`: replay the bundle in `logs/examples/` |
 | `DATA_BACKEND` | `zetaris` (judged path) · `local`: the seeded simulator in SQLite (tests and keyless dev only) |
-| `MODEL_MODE` | `live` · `record`: QA machine writes `cassettes/` with secrets masked · `replay`: a cassette miss fails loudly · `fake`: offline rules (tests only) |
+| `MODEL_MODE` | `live` · `record`: QA machine writes `cassettes/` with secrets masked · `record-missing`: replay a cassette when one exists, record it when not · `replay`: a cassette miss fails loudly · `fake`: offline rules (tests only) |
 
-The provisional sample bundle in `logs/examples/` was recorded keyless (local store + fake model), and its `recorded_with` field says so. The FULL-mode recording replaces it after QA.
+The sample bundle in `logs/examples/` and the three example pairs were recorded from a FULL-mode run (Zetaris, `deepseek-v4.1-flash`); its `recorded_with` field says so. The model responses behind it are committed as cassettes in `cassettes/`, and replaying them against Zetaris (`DATA_BACKEND=zetaris MODEL_MODE=replay python scripts/seed_sample.py --out <tmpdir>`) reproduces the same answers without model calls. `make e2e` replays a second cassette set recorded on the local store (`make record-e2e`), because evidence ids depend on the data backend; see `cassettes/README.md`. A model call is not perfectly repeatable, so a re-recorded bundle can differ in wording or in which hypotheses the planner picks.
 
 ## Clean-machine checklist (SAMPLE mode, zero credentials)
 

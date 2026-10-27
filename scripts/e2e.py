@@ -2,6 +2,8 @@
 
   python scripts/e2e.py          # keyless: local seeded store + cassettes (or the fake model if none yet)
   python scripts/e2e.py --full   # QA machine: loader + Zetaris registration, then the keyed FULL run
+  python scripts/e2e.py --record # QA machine: local store + live model; records only the cassettes still missing
+                                 # (MODEL_MODE=record-missing), so existing ones, including the planner's, are kept
 
 Exit code 0 only when the run succeeds and the trace holds planner, investigator, verifier and writer
 events with at least one federated query and one verifier verdict.
@@ -24,7 +26,10 @@ DEMO = "Why did Saturday dinner revenue drop 18%?"
 def main() -> int:
     load_dotenv()
     ap = argparse.ArgumentParser()
-    ap.add_argument("--full", action="store_true", help="seed the real stores and run against Zetaris + the model")
+    kind = ap.add_mutually_exclusive_group()
+    kind.add_argument("--full", action="store_true", help="seed the real stores and run against Zetaris + the model")
+    kind.add_argument("--record", action="store_true",
+                      help="local store + live model: record the missing cassettes the keyless run replays")
     ap.add_argument("--question", default=DEMO)
     args = ap.parse_args()
     if args.full:
@@ -35,7 +40,9 @@ def main() -> int:
             return 1
     else:
         os.environ["DATA_BACKEND"], os.environ["SAMPLE_MODE"] = "local", "false"
-        if os.environ.get("MODEL_MODE") not in ("replay", "fake"):
+        if args.record:
+            os.environ["MODEL_MODE"] = "record-missing"
+        elif os.environ.get("MODEL_MODE") not in ("replay", "fake"):
             has_cassettes = any((ROOT / "cassettes").rglob("*.json"))
             os.environ["MODEL_MODE"] = "replay" if has_cassettes else "fake"
     print(f"e2e: DATA_BACKEND={os.environ['DATA_BACKEND']} MODEL_MODE={os.environ['MODEL_MODE']}")
