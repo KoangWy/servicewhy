@@ -19,8 +19,9 @@ data/generated/
 *.db
 *.duckdb
 
-# Logs: real runs are local; curated example traces are committed under logs/examples/
+# Logs: real runs are local; curated example traces are committed under logs/examples/ and logs/nightshift-example/
 logs/*
 !logs/examples/
+!logs/nightshift-example/
 
 .DS_Store

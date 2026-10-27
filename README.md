@@ -172,6 +172,8 @@ There are three input/output pairs in `input_examples/` and `output_examples/`: 
 
 Each run writes `logs/trace-<run_id>.jsonl` (schema version 1). The event set is `run_start, plan, query, evidence, verify, block, retry, answer, run_end, wm_mutation`. Each event carries the role, action, summaries, SQL, rows used, verdict and retry count. Readable lines also go to stdout. Secrets are masked (`…redacted`).
 
+One live run through Zetaris and Meterless Nightshift is committed in `logs/nightshift-example/` (trace and World Model log, with the model named for every request in the `run_end` event). It is separate from the SAMPLE bundle in `logs/examples/`.
+
 ## Scorecard
 
 `make scorecard` runs the ten canned questions in `app/scorecard/questions.yaml` on a fresh seeded dataset. It joins each trace and World Model log with the simulator's ground truth and prints the table published below. The agent never reads ground truth: only the harness loads it, and a default-suite test greps agent-side modules for any reference. It needs the FULL stack (Zetaris, a configured model and the seeded stores), so it cannot run in SAMPLE mode. The published table was measured with `deepseek-v4.1-flash`; running the harness through another model gives a different, unpublished result.
