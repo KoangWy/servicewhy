@@ -6,8 +6,10 @@ Language: English only in every file, commit message, branch name and PR body.
 
 1. **The agent never reads `ground_truth`.** The injected-cause file is simulator output, loaded
    only by the scorecard harness, never importable from agent code paths.
-2. **Every model call goes through `ModelAdapter`** (OpenAI-compatible client → OpenCode Go).
-   One `x-opencode-session` UUID per investigation run. No direct API calls anywhere else.
+2. **Every model call goes through `ModelAdapter`** (OpenAI-compatible client → Meterless Nightshift Runtime,
+   the primary provider; OpenCode Go only when `MODEL_PROVIDER=opencode`). On the OpenCode Go path, one
+   `x-opencode-session` UUID per investigation run. No direct API calls anywhere else, and no silent fallback
+   from Nightshift to another provider.
 3. **Every data read goes through `DataAccessAdapter`** → Zetaris federated SQL. Direct store
    connections exist only in the simulator loader and SAMPLE_MODE replay.
 4. **Every step is logged** as JSONL to `logs/trace-<run_id>.jsonl` and stdout: role, action,

@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 470" role="img" aria-labelledby="t d">
+  <title id="t">How ServiceWhy answers a question</title>
+  <desc id="d">A question goes to the Planner, then the Investigator, then the Verifier. If the Verifier passes the claims they go to the Writer and become the answer. If it blocks a claim, the Investigator retries on a wider sample, at most twice. All four roles share the World Model. The Investigator reads data through Zetaris and the Planner, Verifier and Writer call models through Meterless Nightshift.</desc>
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0L10 5L0 10z" fill="#64748b"/>
+    </marker>
+    <marker id="arg" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0L10 5L0 10z" fill="#16a34a"/>
+    </marker>
+    <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0L10 5L0 10z" fill="#dc2626"/>
+    </marker>
+  </defs>
+
+  <rect x="1" y="1" width="1198" height="468" rx="18" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/>
+
+  <g font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+    <text x="30" y="40" font-size="20" font-weight="700" fill="#0f172a">One question, four roles, and a gate that can say no</text>
+
+    <!-- block loop -->
+    <path d="M772 112V84H495V108" fill="none" stroke="#dc2626" stroke-width="2.5" stroke-dasharray="7 5" marker-end="url(#arr)"/>
+    <text x="633" y="74" font-size="13.5" font-weight="600" text-anchor="middle" fill="#b91c1c">block: widen the sample and retry (at most 2)</text>
+
+    <!-- row of roles -->
+    <rect x="25" y="112" width="130" height="64" rx="14" fill="#e2e8f0"/>
+    <text x="90" y="150" font-size="17" font-weight="600" text-anchor="middle" fill="#0f172a">Question</text>
+
+    <rect x="200" y="112" width="155" height="64" rx="14" fill="#2563eb"/>
+    <text x="277" y="137" font-size="18" font-weight="700" text-anchor="middle" fill="#ffffff">Planner</text>
+    <text x="277" y="158" font-size="12.5" text-anchor="middle" fill="#dbeafe">intent · slots · plan</text>
+
+    <rect x="410" y="112" width="170" height="64" rx="14" fill="#2563eb"/>
+    <text x="495" y="137" font-size="18" font-weight="700" text-anchor="middle" fill="#ffffff">Investigator</text>
+    <text x="495" y="158" font-size="12.5" text-anchor="middle" fill="#dbeafe">queries · contrasts</text>
+
+    <rect x="635" y="112" width="160" height="64" rx="14" fill="#1e3a8a" stroke="#f59e0b" stroke-width="3"/>
+    <text x="715" y="137" font-size="18" font-weight="700" text-anchor="middle" fill="#ffffff">Verifier</text>
+    <text x="715" y="158" font-size="12.5" text-anchor="middle" fill="#bfdbfe">V1–V5 + judgment</text>
+    <rect x="650" y="101" width="74" height="20" rx="10" fill="#dc2626"/>
+    <text x="687" y="115" font-size="11.5" font-weight="700" text-anchor="middle" fill="#ffffff">CAN BLOCK</text>
+
+    <rect x="850" y="112" width="150" height="64" rx="14" fill="#2563eb"/>
+    <text x="925" y="137" font-size="18" font-weight="700" text-anchor="middle" fill="#ffffff">Writer</text>
+    <text x="925" y="158" font-size="12.5" text-anchor="middle" fill="#dbeafe">findings · answer</text>
+
+    <rect x="1045" y="112" width="130" height="64" rx="14" fill="#16a34a"/>
+    <text x="1110" y="140" font-size="17" font-weight="700" text-anchor="middle" fill="#ffffff">Answer</text>
+    <text x="1110" y="159" font-size="11.5" text-anchor="middle" fill="#dcfce7">or “insufficient evidence”</text>
+
+    <!-- arrows -->
+    <path d="M155 144H196" stroke="#64748b" stroke-width="2.5" fill="none" marker-end="url(#ar)"/>
+    <path d="M355 144H406" stroke="#64748b" stroke-width="2.5" fill="none" marker-end="url(#ar)"/>
+    <path d="M580 144H631" stroke="#64748b" stroke-width="2.5" fill="none" marker-end="url(#ar)"/>
+    <path d="M795 144H846" stroke="#16a34a" stroke-width="2.5" fill="none" marker-end="url(#arg)"/>
+    <text x="820" y="136" font-size="13" font-weight="700" text-anchor="middle" fill="#15803d">pass</text>
+    <path d="M1000 144H1041" stroke="#64748b" stroke-width="2.5" fill="none" marker-end="url(#ar)"/>
+
+    <!-- captions -->
+    <g font-size="13" fill="#475569" text-anchor="middle">
+      <text x="277" y="202">at most 3 hypotheses</text>
+      <text x="277" y="219">from a YAML library</text>
+      <text x="495" y="202">federated SQL, one</text>
+      <text x="495" y="219">contrast-backed item each</text>
+      <text x="715" y="202">re-queries every number</text>
+      <text x="715" y="219">blocks what data can't back</text>
+      <text x="925" y="202">every number cites</text>
+      <text x="925" y="219">an evidence id</text>
+    </g>
+
+    <!-- sponsor tags -->
+    <g font-size="12" font-weight="700" text-anchor="middle">
+      <rect x="222" y="236" width="110" height="22" rx="11" fill="#ede9fe"/><text x="277" y="251" fill="#6d28d9">Nightshift</text>
+      <rect x="450" y="236" width="90" height="22" rx="11" fill="#ccfbf1"/><text x="495" y="251" fill="#0f766e">Zetaris</text>
+      <rect x="640" y="236" width="70" height="22" rx="11" fill="#ccfbf1"/><text x="675" y="251" fill="#0f766e">Zetaris</text>
+      <rect x="716" y="236" width="86" height="22" rx="11" fill="#ede9fe"/><text x="759" y="251" fill="#6d28d9">Nightshift</text>
+      <rect x="870" y="236" width="110" height="22" rx="11" fill="#ede9fe"/><text x="925" y="251" fill="#6d28d9">Nightshift</text>
+    </g>
+
+    <!-- shared state -->
+    <g stroke="#93c5fd" stroke-width="2" stroke-dasharray="4 4">
+      <path d="M277 262V300"/><path d="M495 262V300"/><path d="M715 262V300"/><path d="M925 262V300"/>
+    </g>
+    <rect x="200" y="300" width="800" height="52" rx="12" fill="#eff6ff" stroke="#60a5fa" stroke-width="2"/>
+    <text x="600" y="322" font-size="16" font-weight="700" text-anchor="middle" fill="#1d4ed8">World Model</text>
+    <text x="600" y="340" font-size="13" text-anchor="middle" fill="#334155">hypotheses · evidence · findings, append-only, content-hash ids, every mutation attributed to a role</text>
+
+    <!-- legend -->
+    <g font-size="13.5" fill="#334155">
+      <rect x="30" y="382" width="14" height="14" rx="4" fill="#ede9fe" stroke="#7c3aed"/>
+      <text x="54" y="394"><tspan font-weight="700" fill="#6d28d9">Meterless Nightshift</tspan>  primary model provider: the Planner, Verifier and Writer call models through its OpenAI-compatible Runtime</text>
+      <rect x="30" y="406" width="14" height="14" rx="4" fill="#ccfbf1" stroke="#0d9488"/>
+      <text x="54" y="418"><tspan font-weight="700" fill="#0f766e">Zetaris</tspan>  the only data path: every Investigator query and the Verifier’s V1 re-query join PostgreSQL with Parquet on MinIO</text>
+      <rect x="30" y="430" width="14" height="14" rx="4" fill="#eff6ff" stroke="#2563eb"/>
+      <text x="54" y="442"><tspan font-weight="700" fill="#1d4ed8">World Model</tspan>  our own implementation of Meterless’ reference architecture; it routes no model calls</text>
+    </g>
+  </g>
+</svg>

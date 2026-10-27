@@ -6,6 +6,12 @@ cut, scale seams) and `decisions/0003` (roster, all-new work, repo). Concept of 
 `track/restaurant-service-concept.md` (strategy repo). Judge-facing execution standard:
 HackOS *Technical Execution Guide* snapshot (`docs/hackos_resources/technical-execution-requirements.md`).
 
+> **Superseded in part (2026-10-27).** This is the design as agreed on 2026-10-24 and it is kept as written. Two
+> decisions below changed during the build: **D5** (OpenCode Go as the primary model provider) is now the secondary
+> provider, because the event requires Meterless Nightshift as the primary AI provider, and **D16** (Cursor) is
+> settled: the 2026-10-23 announcement made Cursor optional. Where this file and `README.md` disagree, the README
+> describes what the repository does today.
+
 A separate implementation spec with tracked tickets (to-questionnaire → to-spec → to-tickets
 pipeline) will be derived from this document after the day-1 gates. When the two disagree on
 detail, this document wins until a new decision record says otherwise.

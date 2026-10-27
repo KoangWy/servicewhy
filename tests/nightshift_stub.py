@@ -1,7 +1,8 @@
 """Stand-in for a Meterless Nightshift Runtime (OpenAI-compatible), served by stdlib http.server in a thread.
 
 It only emulates the NIGHTSHIFT RUNTIME CONTRACT the app relies on (Bearer auth, GET /v1/models, POST
-/v1/chat/completions); nobody has run a real Nightshift against this app yet.
+/v1/chat/completions). It is a test double for the keyless suite. A real Nightshift was exercised separately
+(2026-10-27); the evidence run is in logs/nightshift-example/.
 """
 from __future__ import annotations
 
