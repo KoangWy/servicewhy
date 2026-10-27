@@ -120,7 +120,7 @@ export function Summary({ text }: { text: string }) {
 export function SyntheticBanner({ mode, replay }: { mode?: string; replay?: boolean }) {
   return (
     <div className="border-b border-line bg-surface-2" role="note" data-testid="synthetic-label">
-      <div className="mx-auto flex max-w-4xl flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2 text-sm text-muted sm:px-6">
+      <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2 text-sm text-muted sm:px-6">
         <span>
           <strong className="font-semibold text-ink">Synthetic data:</strong> a seeded simulator generates every guest,
           ticket and shift. No real people or restaurant.

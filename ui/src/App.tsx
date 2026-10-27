@@ -1,7 +1,11 @@
 import { useEffect, useState } from "react";
 import { api } from "./api";
+import { AskScreen } from "./components/AskScreen";
 import { FindingScreen } from "./components/FindingScreen";
 import { ReportScreen } from "./components/ReportScreen";
+import { RunsScreen } from "./components/RunsScreen";
+import { SettingsScreen } from "./components/SettingsScreen";
+import { Shell } from "./components/Shell";
 import { TraceScreen } from "./components/TraceScreen";
 import { PoweredBy, SyntheticBanner } from "./components/common";
 import type { Health } from "./types";
@@ -39,20 +43,17 @@ export default function App() {
   return (
     <div className="min-h-dvh">
       <SyntheticBanner mode={mode} replay={!!health?.sample_mode} />
-      <div className="mx-auto w-full max-w-4xl px-4 sm:px-6">
-        <header className="py-8 sm:py-10">
-          <h1 className="text-2xl font-semibold tracking-tight text-ink">
-            <a href="#/" className="rounded-sm">ServiceWhy</a>
-          </h1>
-          <p className="mt-1 max-w-2xl text-muted">Explains why service or revenue changed; a verifier blocks what the data does not support.</p>
-        </header>
+      <Shell screen={screen ?? ""} health={health} healthFailed={healthFailed}>
         <main>
           {screen === "finding" && arg ? <FindingScreen id={arg} health={health} /> :
            screen === "trace" && arg ? <TraceScreen runId={arg} health={health} /> :
+           screen === "ask" ? <AskScreen health={health} /> :
+           screen === "runs" ? <RunsScreen /> :
+           screen === "settings" ? <SettingsScreen /> :
            <ReportScreen health={health} />}
         </main>
         <PoweredBy health={health} failed={healthFailed} />
-      </div>
+      </Shell>
     </div>
   );
 }
