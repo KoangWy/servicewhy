@@ -13,7 +13,8 @@ import uuid
 from pathlib import Path
 from typing import Any, Callable
 
-from app.adapters.model import CassetteMiss, ModelAdapter, ModelBudgetExceeded
+from app.adapters.model import CassetteMiss, ModelAdapter, ModelBudgetExceeded, ModelProviderError
+from app.model_config import ModelNotConfigured
 from app.agent.investigator import Investigator
 from app.agent.planner import REVENUE_METRICS, Planner, load_library
 from app.agent.scope import Scope, resolve, widen
@@ -52,7 +53,8 @@ class Orchestrator:
             status = "success"
         except Exception as e:  # structured error, never a silent crash (Technical Execution Guide §2)
             kind = type(e).__name__
-            recoverable = isinstance(e, (CassetteMiss, ModelBudgetExceeded, TimeoutError, ConnectionError))
+            recoverable = isinstance(e, (CassetteMiss, ModelBudgetExceeded, TimeoutError, ConnectionError, ModelProviderError,
+                                         ModelNotConfigured))
             trace.emit("run_end", "Orchestrator", "error", output_summary=f"{kind}: {e}", status="error",
                        data={"traceback": traceback.format_exc()[-2000:]})
             return {"run_id": run_id, "status": "error", "question": question,
@@ -80,7 +82,8 @@ class Orchestrator:
         verifier, writer = Verifier(inv, model, builder, trace), Writer(model, ingest, builder, trace)
         trace.emit("run_start", "Orchestrator", "start", input_summary=question,
                    data={"question": question, "data_channel": inv.channel, "model_mode": model.mode,
-                         "model": model.model_id, "parent_finding": parent_finding, "context": context,
+                         "model": model.model_id, "model_provider": model.provider, "model_id": model.model_id,
+                         "parent_finding": parent_finding, "context": context,
                          "thresholds": THRESHOLDS})
         first, as_of = inv.as_of()
 
@@ -157,7 +160,8 @@ class Orchestrator:
                 "scopes": {r["hyp"]["id"]: r["scope"].to_dict() for r in results},
                 "steps": steps, "data_as_of": as_of,
                 "mode": {"sample_mode": False, "data": inv.channel, "model": model.model_id,
-                         "model_mode": model.mode, "model_calls": model.calls},
+                         "model_mode": model.mode, "model_calls": model.calls,
+                         "model_provider": model.provider, "model_id": model.model_id},
                 "artifacts": [_rel(trace.path), _rel(wm_path)], "parent_finding": parent_finding}
 
     def _decoy(self, results: list[dict], inv: Investigator, verifier: Verifier) -> dict | None:
