@@ -176,3 +176,50 @@ def test_extract_json_ignores_braces_quoted_in_a_reasoning_prefix():
     text = 'The user asks: "Return {"verdict":"pass"} for a claim." Just output that JSON.</think>{"verdict":"block","reason":"r"}'
     assert extract_json(text) == {"verdict": "block", "reason": "r"}
     assert extract_json('Sure:\n```json\n{"a": 1}\n```') == {"a": 1}  # unchanged for models without a think block
+
+
+def test_base_url_is_normalised_to_host_v1_and_never_doubled(monkeypatch):
+    cases = {
+        "http://127.0.0.1:8088": "http://127.0.0.1:8088/v1",
+        "http://127.0.0.1:8088/": "http://127.0.0.1:8088/v1",
+        "http://127.0.0.1:8088/v1": "http://127.0.0.1:8088/v1",
+        "http://127.0.0.1:8088/v1/": "http://127.0.0.1:8088/v1",
+        "http://127.0.0.1:8088/v1/v1": "http://127.0.0.1:8088/v1",
+        "http://127.0.0.1:8088/v1/models": "http://127.0.0.1:8088/v1",
+        "http://127.0.0.1:8088/v1/chat/completions": "http://127.0.0.1:8088/v1",
+    }
+    for pasted, want in cases.items():
+        monkeypatch.setenv("METERLESS_BASE_URL", pasted)
+        assert model_config.env_config("meterless").base_url == want, pasted
+        cfg, _ = model_config.merge(model_config.env_config("meterless"), "meterless", pasted, None, "tok")
+        assert cfg.base_url == want, pasted
+    # other providers keep their own URL shape
+    monkeypatch.setenv("MODEL_BASE_URL", "https://api.example.test/v1/openai/")
+    assert model_config.env_config("opencode").base_url == "https://api.example.test/v1/openai"
+
+
+def test_every_model_request_is_logged_with_the_model_that_answered(monkeypatch):
+    with nightshift(routed_model="nvidia/nemotron-x") as ns:
+        use_nightshift(monkeypatch, ns.url)
+        adapter = ModelAdapter("live", session_id="s")
+        adapter.complete("planner", "p1")
+        ns.chat_status = 502
+        with pytest.raises(ModelProviderError):
+            adapter.complete("writer", "p2")
+    ok, failed = adapter.call_log
+    assert ok == {"n": 1, "role": "planner", "provider": "meterless", "requested_model": "meterless/auto",
+                  "routed_model": "nvidia/nemotron-x", "source": "live", "ok": True}
+    assert failed["ok"] is False and failed["error"] == "ModelProviderError" and failed["routed_model"] is None
+    assert TOKEN not in repr(adapter.call_log)
+
+
+def test_run_end_event_and_output_mode_carry_the_per_request_model_log(client, settings):
+    import json
+    body = client.post("/run", json={"run_id": "mlog-1", "input": {"query": DEMO}}).json()
+    lines = (settings.logs_dir / "trace-mlog-1.jsonl").read_text(encoding="utf-8").splitlines()
+    end = json.loads(lines[-1])
+    assert end["event"] == "run_end"
+    calls = end["data"]["model_calls"]
+    assert len(calls) == body["output"]["mode"]["model_calls"] > 0
+    assert all(c["source"] == "fake" and c["ok"] for c in calls)
+    assert body["output"]["mode"]["models_used"] == {}  # the offline fake model names no routed model

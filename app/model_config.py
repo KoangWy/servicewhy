@@ -62,8 +62,19 @@ def safe_url(url: str) -> str:
     return urlunsplit((p.scheme, netloc, p.path, "", "")) if p.scheme else url
 
 
-def _norm(url: str) -> str:
-    return url.strip().rstrip("/")
+def _norm(url: str, provider: str | None = None) -> str:
+    """Trim a pasted URL. For Nightshift the Runtime base is always `<host>/v1`: a pasted `/chat/completions` or
+    `/models` tail is dropped, a bare host gets `/v1`, and a repeated `/v1/v1` collapses (never `/v1/v1`)."""
+    url = url.strip().rstrip("/")
+    if provider == "meterless" and url:
+        for tail in ("/chat/completions", "/models"):
+            if url.endswith(tail):
+                url = url[:-len(tail)].rstrip("/")
+        while url.endswith("/v1/v1"):
+            url = url[:-3]
+        if not url.endswith("/v1"):
+            url += "/v1"
+    return url
 
 
 def env_provider() -> str:
@@ -78,7 +89,7 @@ def env_config(provider: str) -> ModelConfig:
     meta = PROVIDERS[provider]
     url_var, token_var, model_var = meta["env"]
     app = os.environ.get("METERLESS_APP", "").strip() or "servicewhy"
-    return ModelConfig(provider, _norm(os.environ.get(url_var, "") or meta["default_base_url"]),
+    return ModelConfig(provider, _norm(os.environ.get(url_var, "") or meta["default_base_url"], provider),
                        os.environ.get(model_var, "").strip() or meta["default_model_id"],
                        os.environ.get(token_var, "").strip(), app)
 
@@ -105,7 +116,7 @@ def merge(cur: ModelConfig, provider: str | None, base_url: str | None, model_id
     if provider not in PROVIDERS:
         raise ValueError(f"unknown provider {provider!r}; expected one of {sorted(PROVIDERS)}")
     base = cur if provider == cur.provider else env_config(provider)
-    new_url = _norm(base_url or "") or base.base_url
+    new_url = _norm(base_url or "", provider) or base.base_url
     if not new_url.lower().startswith(("http://", "https://")) or not urlsplit(new_url).hostname:
         raise ValueError("base_url must be an http(s) URL such as http://127.0.0.1:8088/v1")
     if urlsplit(new_url).username or urlsplit(new_url).password:

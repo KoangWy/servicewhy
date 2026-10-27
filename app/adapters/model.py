@@ -147,8 +147,10 @@ def make_meterless_generator(cfg: ModelConfig, *, session_id: str | None = None,
         messages = ([{"role": "system", "content": system_prompt}] if system_prompt else [])
         messages.append({"role": "user", "content": prompt})
         body = chat_completion(cfg, {"model": cfg.model_id, "messages": messages, "temperature": 0}, timeout=timeout)
+        ns = body.get("meterless")
+        routed = (ns.get("routed_model") if isinstance(ns, dict) else None) or body.get("model") or cfg.model_id
         return {"text": _reply_text(cfg, body), "usage": body.get("usage"), "session": session,
-                "model": body.get("model") or cfg.model_id}
+                "model": body.get("model") or cfg.model_id, "routed_model": routed}
 
     return generator
 
@@ -220,6 +222,9 @@ class ModelAdapter:
         self.cassette_dir, self.max_calls, self.calls = Path(cassette_dir), max_calls, 0
         self._live, self._backup, self._fake = live, backup, fake
         self._cfg: ModelConfig | None = None
+        # one entry per model request: which model was asked for, which one answered (Nightshift reports it), and
+        # whether the call succeeded. Evidence for "which model handled each request"; never holds prompts or keys.
+        self.call_log: list[dict[str, Any]] = []
 
     @classmethod
     def from_env(cls, *, session_id: str, cassette_dir: str | Path) -> "ModelAdapter":
@@ -275,6 +280,9 @@ class ModelAdapter:
         if self.calls > self.max_calls:
             raise ModelBudgetExceeded(f"model call budget of {self.max_calls} per run exhausted")
         key = cassette_key(role, system_prompt, prompt)
+        entry = {"n": self.calls, "role": role, "provider": self.provider, "requested_model": self.model_id,
+                 "routed_model": None, "source": self.mode, "ok": True}
+        self.call_log.append(entry)
         if self.mode == "fake":
             if self._fake is None:
                 from app.adapters.fake_model import respond
@@ -287,7 +295,12 @@ class ModelAdapter:
                 return {"text": rec["response"]["text"], "session": self.session_id, "source": f"cassette:{key}"}
             if self.mode == "replay":
                 raise CassetteMiss(f"no cassette for role={role} key={key} in {self.cassette_dir}")
-        out = self._live_call(prompt, system_prompt)
+        try:
+            out = self._live_call(prompt, system_prompt)
+        except Exception as e:
+            entry.update(ok=False, error=type(e).__name__)
+            raise
+        entry["routed_model"] = out.get("routed_model") or out.get("model")
         if self.mode in ("record", "record-missing"):
             path = self._path(role, key)
             path.parent.mkdir(parents=True, exist_ok=True)

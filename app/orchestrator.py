@@ -56,14 +56,15 @@ class Orchestrator:
             recoverable = isinstance(e, (CassetteMiss, ModelBudgetExceeded, TimeoutError, ConnectionError, ModelProviderError,
                                          ModelNotConfigured))
             trace.emit("run_end", "Orchestrator", "error", output_summary=f"{kind}: {e}", status="error",
-                       data={"traceback": traceback.format_exc()[-2000:]})
+                       data={"traceback": traceback.format_exc()[-2000:],
+                             "model_calls": getattr(trace, "model_call_log", [])})
             return {"run_id": run_id, "status": "error", "question": question,
                     "error": {"type": kind, "message": str(e)[:500], "recoverable": recoverable},
                     "trace_id": f"trace-{run_id}", "log_file": _rel(trace.path),
                     "execution_time_seconds": round(time.time() - t0, 2)}
         elapsed = round(time.time() - t0, 2)
         trace.emit("run_end", "Orchestrator", "complete", output_summary=f"{status} in {elapsed}s",
-                   data={"execution_time_seconds": elapsed})
+                   data={"execution_time_seconds": elapsed, "model_calls": getattr(trace, "model_call_log", [])})
         return {"run_id": run_id, "status": status, "question": question, "output": out, "agents": AGENTS,
                 "trace_id": f"trace-{run_id}", "log_file": _rel(trace.path), "execution_time_seconds": elapsed}
 
@@ -72,6 +73,7 @@ class Orchestrator:
         s = self.settings
         session = str(uuid.uuid5(uuid.NAMESPACE_URL, run_id))  # x-opencode-session: one per investigation
         model = self.model_factory(session)
+        trace.model_call_log = model.call_log  # read by run_end, including after a failed run
         data = self.data_factory()
         wm_path = s.logs_dir / f"worldmodel-{run_id}.jsonl"
         store = WorldStoreService(wm_path, on_mutation=lambda rec: trace.emit(
@@ -161,7 +163,8 @@ class Orchestrator:
                 "steps": steps, "data_as_of": as_of,
                 "mode": {"sample_mode": False, "data": inv.channel, "model": model.model_id,
                          "model_mode": model.mode, "model_calls": model.calls,
-                         "model_provider": model.provider, "model_id": model.model_id},
+                         "model_provider": model.provider, "model_id": model.model_id,
+                         "models_used": _models_used(model.call_log)},
                 "artifacts": [_rel(trace.path), _rel(wm_path)], "parent_finding": parent_finding}
 
     def _decoy(self, results: list[dict], inv: Investigator, verifier: Verifier) -> dict | None:
@@ -179,6 +182,15 @@ class Orchestrator:
             if verifier.check_item(s_ev, retry=0)["blocked"]:
                 s_ev = None
         return verifier.decoy_split(d, s_ev)
+
+
+def _models_used(call_log: list[dict]) -> dict[str, int]:
+    """How many requests each model really answered (Nightshift reports the routed model per request)."""
+    used: dict[str, int] = {}
+    for c in call_log:
+        if c.get("ok") and c.get("routed_model"):
+            used[c["routed_model"]] = used.get(c["routed_model"], 0) + 1
+    return used
 
 
 def _rel(p: Path) -> str:
