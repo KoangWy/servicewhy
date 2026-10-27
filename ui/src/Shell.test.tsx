@@ -104,7 +104,8 @@ test("Ask shows the sample questions as chips and renders the answer with its tr
   expect(await screen.findByText("Saturday was slow because of staffing.")).toBeTruthy();
   expect(screen.getByText(/Evidence & trace/).closest("a")?.getAttribute("href")).toBe("#/trace/r9");
   expect((screen.getByLabelText("question") as HTMLInputElement).value).toBe("Why was Saturday slow?");
-  expect(JSON.parse(calls("POST /api/run")[0][1].body)).toEqual({ input: { query: "Why was Saturday slow?" } });
+  const body = JSON.parse(calls("POST /api/run")[0][1].body);
+  expect(body).toEqual({ input: { query: "Why was Saturday slow?" }, run_id: expect.stringMatching(/^ui-[0-9a-f]{8}$/) });
 });
 
 test("Ask explains a SampleModeMiss and lists the recorded questions", async () => {

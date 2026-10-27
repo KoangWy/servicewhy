@@ -1,4 +1,4 @@
-import type { ApiErrorBody, ConnectionTest, Finding, Health, ModelSettingsInput, Report, RunResponse, RunSummary, Settings, TraceEvent } from "./types";
+import type { Activity, ApiErrorBody, ConnectionTest, Finding, Health, ModelSettingsInput, Report, RunResponse, RunSummary, Settings, TraceEvent } from "./types";
 
 const BASE = "/api";
 
@@ -29,9 +29,10 @@ export const isApiError = (body: unknown): body is ApiErrorBody => (body as ApiE
 
 export const api = {
   health: () => call<Health>("/health"),
-  run: (query: string, context?: string) => post<RunResponse>("/run", { input: { query, context } }),
+  run: (query: string, context?: string, runId?: string) =>
+    post<RunResponse>("/run", { input: { query, context }, ...(runId ? { run_id: runId } : {}) }),
   listReports: () => call<{ report_id: string }[]>("/reports"),
-  createReport: () => post<{ report_id: string }>("/reports", {}),
+  createReport: () => post<{ report_id: string } | ApiErrorBody>("/reports", {}),
   report: (id: string) => call<Report>(`/reports/${id}`),
   finding: (id: string) => call<Finding>(`/findings/${id}`),
   decide: (id: string, decision: "approve" | "reject") => post<Finding>(`/findings/${id}/${decision}`, { role: "manager" }),
@@ -41,5 +42,6 @@ export const api = {
   settings: () => call<Settings>("/settings"),
   saveModel: (input: ModelSettingsInput) => put<Settings | ApiErrorBody>("/settings/model", input),
   testModel: (input: ModelSettingsInput) => post<ConnectionTest>("/settings/test", input),
+  activity: () => call<Activity>("/activity"),
   trace: (runId: string) => call<{ run_id: string; events: TraceEvent[] }>(`/traces/${runId}`),
 };
