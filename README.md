@@ -200,11 +200,13 @@ The question's "18%" is a manager's guess. The verifier recomputes the change fr
 
 Simulator parameters, verifier thresholds and the tuned prompts are frozen from the commit that publishes this table.
 
+**Second measurement, through Nightshift** (2026-10-27, same seed, same ten questions, code at `5663658`, the later commits only add logging and URL handling; model `nvidia/nemotron-3-ultra-550b-a55b` served by Meterless Nightshift; data from the keyless SQLite stand-in for Zetaris because no Zetaris bundle ran on that machine, so this is not a FULL-mode number). Nothing was tuned for it. Result: **8/10 questions pass every check**, with the same two misses (Q1 ranking, Q6 split); root-cause hit 2/3, evidence precision 18/27 (67%), unsupported claims caught 11 and wrongly blocked 0, decoy rejection 1/1, abstention 2/2, 0.2 retries per investigation. It is in-sample for the same reason as the first table. We did not run this scorecard through Zetaris and Nightshift together.
+
 ## Development (keyless)
 
 ```bash
 pip install -r requirements-dev.txt
-python -m pytest -q                 # 84 tests; local seeded store + offline fake model, no keys, no services
+python -m pytest -q                 # 119 tests; local seeded store + offline fake model, no keys, no services
 python scripts/e2e.py               # make e2e: demo question through POST /run on the local store, replaying the recorded model; asserts every role is in the trace
 cd ui && npm ci && npm test && npm run dev   # UI on :5173, proxies /api to :8000
 ```
